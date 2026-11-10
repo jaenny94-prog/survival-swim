@@ -1,0 +1,2777 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>생존수영 특공대: 마스터 올스타즈</title>
+  
+  <!-- PWA & Mobile Web Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0284c7" />
+
+  <!-- Google Web Fonts (Pretendard, Fredoka, Gowun Dodum) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Gowun+Dodum&family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'sans-serif'],
+            display: ['Fredoka', 'Pretendard', 'sans-serif'],
+            dodum: ['Gowun Dodum', 'sans-serif']
+          },
+          colors: {
+            ocean: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+              950: '#082f49',
+            },
+            jelly: {
+              yellow: '#facc15',
+              orange: '#fb923c',
+              green: '#4ade80',
+              pink: '#f472b6',
+              purple: '#c084fc'
+            }
+          },
+          boxShadow: {
+            'pop': '0 8px 0 rgba(0, 0, 0, 0.18)',
+            'pop-sm': '0 4px 0 rgba(0, 0, 0, 0.18)',
+            'pop-press': '0 2px 0 rgba(0, 0, 0, 0.18)',
+            'jelly-btn': '0 6px 0 #0284c7, 0 10px 20px rgba(2, 132, 199, 0.35)',
+            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background: radial-gradient(circle at 50% 20%, #38bdf8 0%, #0284c7 50%, #0369a1 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .btn-3d {
+      transition: all 0.08s ease;
+      cursor: pointer;
+    }
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2) !important;
+    }
+    @keyframes bobble {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(1deg); }
+    }
+    .animate-bobble {
+      animation: bobble 3s ease-in-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .ring-active {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+    .shake-reject {
+      animation: shake 0.4s ease-in-out;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between font-sans text-slate-800 p-2 sm:p-4">
+
+  <!-- ==================================================================== -->
+  <!-- 글로벌 오디오 & 점수 상단 헤더 바 -->
+  <!-- ==================================================================== -->
+  <header class="w-full max-w-4xl bg-white/90 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-glass border-2 border-white/60 flex items-center justify-between mb-3 z-30">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-sm">
+        🛟
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-display font-extrabold text-ocean-900 tracking-tight leading-none">
+          생존수영 특공대
+        </h1>
+        <span class="text-[11px] text-ocean-600 font-dodum font-bold">초등 4학년 실전 생존수영 체험</span>
+      </div>
+    </div>
+
+    <!-- 점수 / 스테이지 / 사운드 토글 -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- 점수 -->
+      <div class="flex items-center gap-1.5 bg-amber-100/90 border border-amber-300 px-3 py-1 rounded-full">
+        <span class="text-sm">⭐</span>
+        <span id="topScoreText" class="font-display font-black text-amber-700 text-sm sm:text-base">0 pt</span>
+      </div>
+      <!-- 음소거 토글 -->
+      <button id="btnAudioToggle" class="w-9 h-9 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-base hover:bg-slate-200 active:scale-95 transition-all">
+        🔊
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================================================================== -->
+  <!-- 메인 게임 뷰포트 컨테이너 (단일 화면 전환) -->
+  <!-- ==================================================================== -->
+  <main id="appContainer" class="w-full max-w-4xl bg-white/95 backdrop-blur-lg rounded-3xl p-3 sm:p-6 shadow-2xl border-4 border-white min-h-[560px] flex flex-col justify-between relative overflow-hidden">
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 1: 인트로 & 학생 프로필 등록 -->
+    <!-- ================================================================== -->
+    <section id="screenIntro" class="flex flex-col items-center justify-center py-4 text-center my-auto">
+      <div class="animate-bobble mb-2">
+        <span class="inline-block px-4 py-1.5 bg-cyan-100 text-cyan-800 rounded-full font-bold text-xs sm:text-sm border border-cyan-300 mb-2">
+          🌊 4학년 1학기 안전교육 필수 코스
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-display font-black text-ocean-950 tracking-tight">
+          생존수영 특공대 : 마스터 올스타즈
+        </h2>
+      </div>
+
+      <p class="text-xs sm:text-sm text-slate-600 max-w-md font-dodum mb-4">
+        집에서 짐 싸기부터 버스 탑승, 수영장 에티켓 뿅망치, 구명조끼 가랑이끈 체결, 실전 생존자세, 워터슬라이드와 비행기 불시착 탈출까지 모두 마스터해보세요!
+      </p>
+
+      <!-- 캐릭터 선택 -->
+      <div class="w-full max-w-md bg-ocean-50/80 p-3 rounded-2xl border-2 border-ocean-200 mb-4">
+        <div class="text-xs font-bold text-ocean-800 mb-2 font-dodum">내 마스코트 파트너 선택</div>
+        <div class="grid grid-cols-4 gap-2" id="partnerSelectBox">
+          <button data-partner="otter" class="partner-btn p-2 rounded-xl border-2 border-ocean-400 bg-white shadow-sm flex flex-col items-center">
+            <span class="text-3xl">🦦</span>
+            <span class="text-[11px] font-bold text-slate-700 mt-1">오티(수달)</span>
+          </button>
+          <button data-partner="dolphin" class="partner-btn p-2 rounded-xl border-2 border-transparent bg-white/60 hover:bg-white shadow-sm flex flex-col items-center">
+            <span class="text-3xl">🐬</span>
+            <span class="text-[11px] font-bold text-slate-700 mt-1">돌이(돌고래)</span>
+          </button>
+          <button data-partner="seal" class="partner-btn p-2 rounded-xl border-2 border-transparent bg-white/60 hover:bg-white shadow-sm flex flex-col items-center">
+            <span class="text-3xl">🦭</span>
+            <span class="text-[11px] font-bold text-slate-700 mt-1">물돌(물개)</span>
+          </button>
+          <button data-partner="penguin" class="partner-btn p-2 rounded-xl border-2 border-transparent bg-white/60 hover:bg-white shadow-sm flex flex-col items-center">
+            <span class="text-3xl">🐧</span>
+            <span class="text-[11px] font-bold text-slate-700 mt-1">핑구(펭귄)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 학생 정보 입력 -->
+      <div class="w-full max-w-md flex flex-wrap gap-2 justify-center mb-5">
+        <input id="inputClass" type="text" placeholder="예: 4학년 2반" value="4학년 2반" class="px-3 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-center w-28 outline-none focus:border-cyan-500" />
+        <input id="inputName" type="text" placeholder="학생 이름" value="김바다" class="px-3 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-center w-28 outline-none focus:border-cyan-500" />
+      </div>
+
+      <!-- 플레이 시작 버튼들 -->
+      <div class="flex flex-col gap-2.5 w-full max-w-sm">
+        <button id="btnStartFullCourse" class="btn-3d w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-display font-black text-lg sm:text-xl rounded-2xl shadow-jelly-btn border-b-4 border-blue-700">
+          🚀 생존수영 원정대 풀코스 출발!
+        </button>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnQuickSlide" class="btn-3d py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-display font-bold text-xs sm:text-sm rounded-xl shadow-pop border-b-3 border-orange-600">
+            🌊 워터슬라이드 바로가기
+          </button>
+          <button id="btnQuickPlane" class="btn-3d py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-display font-bold text-xs sm:text-sm rounded-xl shadow-pop border-b-3 border-rose-700">
+            ✈️ 비행기 불시착 탈출 미션
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 2: 집에서 짐 싸기 (가방 패킹 UI) -->
+    <!-- ================================================================== -->
+    <section id="screenPack" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-2">
+        <span class="px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full font-bold text-xs">STAGE 1</span>
+        <h3 class="font-display font-black text-xl sm:text-2xl text-ocean-950 mt-1">집에서 꼼꼼 짐 싸기 챌린지</h3>
+        <p class="text-xs sm:text-sm text-slate-600 font-dodum">수영장에 꼭 필요한 6개 물품을 가방에 넣으세요! (위험물은 튕겨 나갑니다)</p>
+      </div>
+
+      <div class="w-full flex flex-col md:flex-row items-center justify-center gap-4 my-auto">
+        <!-- 물품 선택 그리드 -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full max-w-lg" id="packItemsGrid">
+          <!-- JS에서 아이템 버튼 렌더링 -->
+        </div>
+
+        <!-- 방수 가방 SVG 및 패킹 슬롯 -->
+        <div id="backpackDropZone" class="w-56 sm:w-64 bg-ocean-50 border-3 border-cyan-400 rounded-3xl p-3 flex flex-col items-center relative shadow-inner">
+          <div class="text-xs font-bold text-cyan-800 mb-1">🎒 내 방수 드라이백 (<span id="packCountTxt">0</span>/6)</div>
+          
+          <svg viewBox="0 0 200 240" class="w-40 h-auto drop-shadow-md">
+            <!-- 가방 본체 -->
+            <path d="M 40 50 Q 100 25 160 50 L 175 200 Q 100 230 25 200 Z" fill="#0284c7" stroke="#0369a1" stroke-width="4"/>
+            <!-- 롤탑 버클 -->
+            <rect x="55" y="30" width="90" height="15" fill="#facc15" rx="3" stroke="#ca8a04" stroke-width="2"/>
+            <rect x="90" y="25" width="20" height="25" fill="#1e293b" rx="4"/>
+            <!-- 전면 투명 메쉬 포켓 -->
+            <path d="M 50 110 L 150 110 L 140 190 L 60 190 Z" fill="#ffffff" opacity="0.4" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 4"/>
+            <text x="100" y="155" font-size="12" font-weight="bold" fill="#0c4a6e" text-anchor="middle">DRY-BAG</text>
+          </svg>
+
+          <!-- 담긴 물품 표시기 -->
+          <div id="packedListBadges" class="flex flex-wrap gap-1 justify-center mt-2 min-h-[30px]"></div>
+        </div>
+      </div>
+
+      <div class="w-full flex justify-between items-center mt-2 pt-2 border-t border-slate-200 text-xs">
+        <span class="font-bold text-slate-500 font-dodum">💡 유리병, 껌, 뾰족한 목걸이, 스마트폰은 안전상 반입 금지!</span>
+        <button id="btnPackNext" class="btn-3d px-5 py-2.5 bg-slate-300 text-slate-500 font-bold rounded-xl cursor-not-allowed" disabled>
+          다음 단계로 ➔
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 3: 셔틀버스 탑승 & 안전 수칙 -->
+    <!-- ================================================================== -->
+    <section id="screenBus" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-bold text-xs">STAGE 2</span>
+        <h3 class="font-display font-black text-xl sm:text-2xl text-ocean-950 mt-1">출발! 안전 셔틀버스 & 줄서기</h3>
+        <p id="busInstructionTxt" class="text-xs sm:text-sm text-slate-600 font-dodum">차례대로 줄을 서서 버스에 탑승하세요!</p>
+      </div>
+
+      <!-- 노란색 셔틀버스 일러스트 컨테이너 -->
+      <div class="w-full max-w-xl bg-amber-50 rounded-3xl p-3 border-2 border-amber-300 flex flex-col items-center relative my-auto shadow-inner">
+        
+        <svg viewBox="0 0 400 160" class="w-full max-w-md h-auto drop-shadow-lg">
+          <!-- 버스 몸체 -->
+          <rect x="30" y="30" width="340" height="90" rx="18" fill="#facc15" stroke="#eab308" stroke-width="4"/>
+          <!-- 루프 환기구 -->
+          <rect x="120" y="24" width="70" height="8" fill="#ca8a04" rx="3"/>
+          <rect x="230" y="24" width="70" height="8" fill="#ca8a04" rx="3"/>
+          <!-- 앞 범퍼 & 헤드라이트 -->
+          <path d="M 370 70 L 385 75 L 385 110 L 370 110 Z" fill="#64748b"/>
+          <circle cx="376" cy="85" r="7" fill="#fef08a" stroke="#ca8a04"/>
+          <!-- 앞유리 -->
+          <path d="M 330 40 L 365 48 L 365 85 L 330 85 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>
+          <!-- 창문들 -->
+          <g fill="#38bdf8" stroke="#0284c7" stroke-width="2">
+            <rect x="50" y="42" width="45" height="38" rx="4"/>
+            <rect x="105" y="42" width="45" height="38" rx="4"/>
+            <rect x="160" y="42" width="45" height="38" rx="4"/>
+            <rect x="215" y="42" width="45" height="38" rx="4"/>
+            <rect x="270" y="42" width="45" height="38" rx="4"/>
+          </g>
+          <!-- 승강구 문 -->
+          <rect x="300" y="42" width="22" height="72" fill="#e2e8f0" stroke="#475569" stroke-width="2" rx="2"/>
+          <!-- 바퀴 -->
+          <circle cx="95" cy="120" r="24" fill="#1e293b"/>
+          <circle cx="95" cy="120" r="10" fill="#94a3b8"/>
+          <circle cx="305" cy="120" r="24" fill="#1e293b"/>
+          <circle cx="305" cy="120" r="10" fill="#94a3b8"/>
+          <!-- 텍스트 -->
+          <rect x="80" y="90" width="200" height="18" fill="#ffffff" rx="4"/>
+          <text x="180" y="103" font-size="11" font-weight="900" fill="#0f172a" text-anchor="middle">생존수영 체험 전용 버스</text>
+        </svg>
+
+        <!-- 버스 인터랙티브 미션 박스 -->
+        <div id="busInteractiveArea" class="w-full mt-3 bg-white p-3 rounded-2xl border border-amber-200 flex flex-col items-center">
+          
+          <!-- 미션 1: 차례대로 탑승 대기열 -->
+          <div id="subBusQueue" class="flex flex-col items-center gap-2">
+            <div class="text-xs font-bold text-slate-700">친구들을 차례대로 터치하여 버스에 태워주세요! (<span id="busQueueCount">0</span>/4)</div>
+            <div class="flex gap-3" id="queueStudents">
+              <button class="queue-btn text-2xl p-2 bg-slate-100 border border-slate-300 rounded-xl active:scale-95">👦</button>
+              <button class="queue-btn text-2xl p-2 bg-slate-100 border border-slate-300 rounded-xl active:scale-95">👧</button>
+              <button class="queue-btn text-2xl p-2 bg-slate-100 border border-slate-300 rounded-xl active:scale-95">🧑</button>
+              <button class="queue-btn text-2xl p-2 bg-slate-100 border border-slate-300 rounded-xl active:scale-95">🧒</button>
+            </div>
+          </div>
+
+          <!-- 미션 2: 전 좌석 안전벨트 체결 -->
+          <div id="subBusSeatbelts" class="hidden flex flex-col items-center gap-2">
+            <div class="text-xs font-bold text-rose-600 animate-pulse">🚨 출발 전 필수! 전 좌석 안전벨트를 '딸깍' 잠그세요! (<span id="seatbeltCount">0</span>/4)</div>
+            <div class="flex gap-2" id="seatbeltsRow">
+              <button class="belt-btn px-3 py-2 bg-rose-50 border-2 border-rose-300 text-xs font-bold rounded-xl active:scale-95">좌석1 🔒잠그기</button>
+              <button class="belt-btn px-3 py-2 bg-rose-50 border-2 border-rose-300 text-xs font-bold rounded-xl active:scale-95">좌석2 🔒잠그기</button>
+              <button class="belt-btn px-3 py-2 bg-rose-50 border-2 border-rose-300 text-xs font-bold rounded-xl active:scale-95">좌석3 🔒잠그기</button>
+              <button class="belt-btn px-3 py-2 bg-rose-50 border-2 border-rose-300 text-xs font-bold rounded-xl active:scale-95">좌석4 🔒잠그기</button>
+            </div>
+          </div>
+
+          <!-- 미션 3: 주행 중 안전 지킴이 -->
+          <div id="subBusMoving" class="hidden flex flex-col items-center gap-2 text-center">
+            <div class="text-xs font-bold text-ocean-700">🚌 안전하게 수영장으로 이동 중입니다! 창밖으로 손을 내밀지 않아요!</div>
+            <div class="text-3xl animate-bounce my-1">🛣️ 🌊 🏫</div>
+            <button id="btnArrivePool" class="btn-3d px-6 py-2 bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-pop">
+              수영장 도착! 두 줄 서서 입장하기 ➔
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="w-full flex justify-end mt-2 pt-2 border-t border-slate-200">
+        <button id="btnBusNext" class="btn-3d px-5 py-2.5 bg-slate-300 text-slate-500 font-bold rounded-xl cursor-not-allowed text-xs" disabled>
+          탈의실로 이동 ➔
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 4: 탈의실·샤워실 에티켓 뿅망치 헌터 -->
+    <!-- ================================================================== -->
+    <section id="screenHammer" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-pink-100 text-pink-800 rounded-full font-bold text-xs">STAGE 3</span>
+        <h3 class="font-display font-black text-xl sm:text-2xl text-ocean-950 mt-1">탈의실·샤워실 에티켓 뿅망치 헌터</h3>
+        <p class="text-xs sm:text-sm text-slate-600 font-dodum">비매너·위험 행동만 뿅망치로 타격하세요! (바른 행동은 때리지 않아요!)</p>
+      </div>
+
+      <!-- 타이머 및 콤보 전광판 -->
+      <div class="flex items-center justify-between w-full max-w-md bg-slate-900 text-white px-4 py-2 rounded-2xl border-2 border-pink-400 shadow-md">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-pink-300 font-bold">남은시간:</span>
+          <span id="hammerTimerTxt" class="font-display font-black text-amber-400 text-lg">25초</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="hammerComboTxt" class="font-display font-black text-cyan-400 text-sm">0 COMBO</span>
+          <span id="hammerFeverBadge" class="hidden text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full font-black animate-pulse">FEVER 2X!</span>
+        </div>
+      </div>
+
+      <!-- 6개 두더지/뿅망치 타겟 그리드 -->
+      <div class="grid grid-cols-3 gap-2.5 sm:gap-3 w-full max-w-md my-auto" id="hammerHolesGrid">
+        <!-- JS에서 6개 구멍 및 팝업 캐릭터 카드 렌더링 -->
+      </div>
+
+      <div class="w-full flex justify-between items-center mt-1 pt-2 border-t border-slate-200 text-xs">
+        <span class="text-slate-500 font-dodum">💡 친구 몸 보고 웃기 / 바닥 뛰기 / 침 뱉기 / 물총 장난 = 타격 대상!</span>
+        <button id="btnHammerNext" class="hidden btn-3d px-5 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-xl shadow-pop">
+          물 적시기 단계로 ➔
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 5: 물 적시기 & 구명조끼 가랑이끈 체결 -->
+    <!-- ================================================================== -->
+    <section id="screenWashVest" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full font-bold text-xs">STAGE 4</span>
+        <h3 id="washVestTitle" class="font-display font-black text-xl sm:text-2xl text-ocean-950 mt-1">심장에서 먼 곳부터 물 적시기</h3>
+        <p id="washVestSubtitle" class="text-xs sm:text-sm text-slate-600 font-dodum">심장마비 예방! 1.발 ➔ 2.다리 ➔ 3.양팔 ➔ 4.얼굴 ➔ 5.가슴 순으로 터치하세요!</p>
+      </div>
+
+      <div class="w-full max-w-xl flex flex-col sm:flex-row items-center justify-center gap-4 my-auto bg-cyan-50/60 p-3 rounded-3xl border-2 border-cyan-200">
+        
+        <!-- 대형 사람(초등학생) 벡터 일러스트레이션 (직관적 컬러링 및 구명조끼 레이어) -->
+        <div class="relative w-48 sm:w-56 h-72 flex items-center justify-center bg-white rounded-2xl shadow-inner border border-cyan-100 p-2">
+          
+          <svg id="humanBodySvg" viewBox="0 0 200 280" class="w-full h-full">
+            <!-- 그림자 -->
+            <ellipse cx="100" cy="265" rx="55" ry="10" fill="#cbd5e1" opacity="0.6"/>
+
+            <!-- 신체 부위 (물 닿으면 아쿠아 블루 #38bdf8 로 색칠) -->
+            <!-- 1. 발 -->
+            <g id="bodyFeet" class="cursor-pointer transition-colors duration-300">
+              <ellipse cx="80" cy="250" rx="14" ry="7" fill="#fed7aa" stroke="#fb923c" stroke-width="2"/>
+              <ellipse cx="120" cy="250" rx="14" ry="7" fill="#fed7aa" stroke="#fb923c" stroke-width="2"/>
+            </g>
+
+            <!-- 2. 다리 -->
+            <g id="bodyLegs" class="cursor-pointer transition-colors duration-300">
+              <rect x="72" y="170" width="18" height="75" rx="7" fill="#fed7aa" stroke="#fb923c" stroke-width="2"/>
+              <rect x="110" y="170" width="18" height="75" rx="7" fill="#fed7aa" stroke="#fb923c" stroke-width="2"/>
+            </g>
+
+            <!-- 수영복 바지 -->
+            <rect x="68" y="145" width="64" height="30" rx="6" fill="#0284c7" stroke="#0369a1" stroke-width="2"/>
+
+            <!-- 3. 양팔 -->
+            <g id="bodyArms" class="cursor-pointer transition-colors duration-300">
+              <rect x="42" y="90" width="16" height="65" rx="8" fill="#fed7aa" stroke="#fb923c" stroke-width="2" transform="rotate(15 42 90)"/>
+              <rect x="142" y="90" width="16" height="65" rx="8" fill="#fed7aa" stroke="#fb923c" stroke-width="2" transform="rotate(-15 158 90)"/>
+            </g>
+
+            <!-- 5. 가슴 & 몸통 -->
+            <g id="bodyChest" class="cursor-pointer transition-colors duration-300">
+              <rect x="66" y="85" width="68" height="65" rx="10" fill="#fed7aa" stroke="#fb923c" stroke-width="2"/>
+              <!-- 심장 아이콘 위치 -->
+              <circle cx="85" cy="105" r="7" fill="#f43f5e" opacity="0.8"/>
+            </g>
+
+            <!-- 4. 얼굴 & 머리 -->
+            <g id="bodyHead" class="cursor-pointer transition-colors duration-300">
+              <circle cx="100" cy="50" r="28" fill="#fde68a" stroke="#fbbf24" stroke-width="2"/>
+              <!-- 수영모 -->
+              <path d="M 72 45 Q 100 20 128 45 Z" fill="#0ea5e9"/>
+              <!-- 수경 -->
+              <rect x="80" y="42" width="16" height="10" rx="3" fill="#38bdf8" stroke="#0284c7"/>
+              <rect x="104" y="42" width="16" height="10" rx="3" fill="#38bdf8" stroke="#0284c7"/>
+              <line x1="96" y1="47" x2="104" y2="47" stroke="#0284c7" stroke-width="2"/>
+              <!-- 웃는 입 -->
+              <path d="M 94 62 Q 100 68 106 62" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"/>
+            </g>
+
+            <!-- ============================================== -->
+            <!-- 구명조끼 레이어 (단계별 시각 체결) -->
+            <!-- ============================================== -->
+            <!-- 1단계: 조끼 본체 (초기 숨김) -->
+            <g id="vestLayerBody" class="hidden transition-all duration-300">
+              <path d="M 60 85 L 60 150 L 95 150 L 90 95 Z" fill="#f97316" stroke="#c2410c" stroke-width="2"/>
+              <path d="M 140 85 L 140 150 L 105 150 L 110 95 Z" fill="#f97316" stroke="#c2410c" stroke-width="2"/>
+              <!-- 반사띠 -->
+              <rect x="64" y="105" width="22" height="8" fill="#ffffff" opacity="0.9"/>
+              <rect x="114" y="105" width="22" height="8" fill="#ffffff" opacity="0.9"/>
+              <!-- 호루라기 -->
+              <circle cx="68" cy="95" r="4" fill="#38bdf8"/>
+            </g>
+
+            <!-- 2단계: 가슴 & 허리 버클 (초기 숨김) -->
+            <g id="vestLayerBuckles" class="hidden transition-all duration-300">
+              <!-- 가슴 버클 -->
+              <line x1="88" y1="110" x2="112" y2="110" stroke="#1e293b" stroke-width="3"/>
+              <rect x="94" y="106" width="12" height="8" fill="#facc15" stroke="#1e293b" rx="2"/>
+              <!-- 허리 버클 -->
+              <line x1="88" y1="135" x2="112" y2="135" stroke="#1e293b" stroke-width="3"/>
+              <rect x="94" y="131" width="12" height="8" fill="#facc15" stroke="#1e293b" rx="2"/>
+            </g>
+
+            <!-- 3단계: 가랑이 생명줄 (초기 숨김 - 가장 중요!) -->
+            <g id="vestLayerCrotch" class="hidden transition-all duration-300">
+              <path d="M 80 150 Q 80 190 98 185 L 98 150" fill="none" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+              <path d="M 120 150 Q 120 190 102 185 L 102 150" fill="none" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+              <rect x="94" y="180" width="12" height="8" fill="#facc15" stroke="#dc2626" stroke-width="1.5" rx="2"/>
+              <text x="100" y="202" font-size="8" font-weight="900" fill="#dc2626" text-anchor="middle">생명줄 체결!</text>
+            </g>
+
+          </svg>
+
+          <!-- 물방울 파티클 오버레이 -->
+          <div id="splashAnimLayer" class="absolute inset-0 pointer-events-none flex items-center justify-center text-4xl opacity-0 transition-opacity">
+            💦
+          </div>
+        </div>
+
+        <!-- 우측 컨트롤 패널 (물 적시기 버튼 & 구명조끼 체결 버튼) -->
+        <div class="flex-1 flex flex-col gap-2 w-full max-w-xs">
+          
+          <!-- 모드 A: 물 적시기 버튼들 -->
+          <div id="panelWashButtons" class="flex flex-col gap-1.5">
+            <span class="text-xs font-bold text-ocean-800">💧 순서대로 눌러서 물을 적셔주세요:</span>
+            <button id="btnWash1" class="btn-3d py-2 bg-blue-100 border-2 border-blue-400 text-blue-900 font-bold text-xs rounded-xl text-left px-3">
+              1. 🦶 발에 시원하게 붓기
+            </button>
+            <button id="btnWash2" class="btn-3d py-2 bg-slate-100 border-2 border-slate-300 text-slate-400 font-bold text-xs rounded-xl text-left px-3" disabled>
+              2. 🦵 다리 쓸어올리기
+            </button>
+            <button id="btnWash3" class="btn-3d py-2 bg-slate-100 border-2 border-slate-300 text-slate-400 font-bold text-xs rounded-xl text-left px-3" disabled>
+              3. 💪 양팔 적시기
+            </button>
+            <button id="btnWash4" class="btn-3d py-2 bg-slate-100 border-2 border-slate-300 text-slate-400 font-bold text-xs rounded-xl text-left px-3" disabled>
+              4. 👦 얼굴 톡톡 적시기
+            </button>
+            <button id="btnWash5" class="btn-3d py-2 bg-slate-100 border-2 border-slate-300 text-slate-400 font-bold text-xs rounded-xl text-left px-3" disabled>
+              5. ❤️ 가슴(심장)에 조심스럽게 적시기
+            </button>
+          </div>
+
+          <!-- 모드 B: 구명조끼 3단계 체결 버튼들 (물적시기 완료 후 전환) -->
+          <div id="panelVestButtons" class="hidden flex flex-col gap-2">
+            <span class="text-xs font-black text-rose-700 bg-rose-100 px-3 py-1 rounded-full border border-rose-300 text-center">
+              🛟 구명조끼 3단계 완벽 착용 챌린지
+            </span>
+            <button id="btnVestStep1" class="btn-3d py-2.5 bg-orange-500 text-white font-bold text-xs rounded-xl shadow-pop">
+              1단계: 조끼 양팔에 걸치기
+            </button>
+            <button id="btnVestStep2" class="btn-3d py-2.5 bg-slate-200 text-slate-400 font-bold text-xs rounded-xl shadow-pop" disabled>
+              2단계: 가슴·허리 버클 '딸깍' 잠그기
+            </button>
+            <button id="btnVestStep3" class="btn-3d py-2.5 bg-slate-200 text-slate-400 font-bold text-xs rounded-xl shadow-pop" disabled>
+              3단계: 🚨 다리 사이 가랑이끈(생명줄) 체결!
+            </button>
+            <span class="text-[11px] text-rose-600 font-dodum font-bold text-center">
+              ⚠️ 가랑이끈을 안 매면 물에 빠질 때 조끼만 쏙 벗겨집니다!
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="w-full flex justify-end mt-2 pt-2 border-t border-slate-200">
+        <button id="btnWashVestNext" class="hidden btn-3d px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-pop">
+          생존자세 챌린지로 ➔
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 6: 생존자세 동작 일치 챌린지 (실제 사람 포즈 SVG 변신) -->
+    <!-- ================================================================== -->
+    <section id="screenPose" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-bold text-xs">STAGE 5</span>
+        <h3 class="font-display font-black text-xl sm:text-2xl text-ocean-950 mt-1">생존자세 마스터 : 동작 일치 챌린지</h3>
+        <p class="text-xs sm:text-sm text-slate-600 font-dodum">화면에 제시되는 생존 상황에 맞춰 알맞은 자세 버튼을 누르세요!</p>
+      </div>
+
+      <!-- 상황 지시 전광판 -->
+      <div class="w-full max-w-md bg-purple-950 text-white p-2.5 rounded-2xl border-2 border-purple-400 text-center shadow-md">
+        <div class="text-[11px] text-purple-300 font-bold">지령 목표 자세:</div>
+        <div id="poseTargetTitle" class="font-display font-black text-lg sm:text-xl text-amber-300 my-0.5">
+          1. 크로스 락 (안전 입수 자세)
+        </div>
+        <div id="poseTargetTip" class="text-xs text-purple-200 font-dodum">
+          코·입을 막고 반대쪽 구명조끼 어깨를 꽉 잡아 충격을 방어하세요!
+        </div>
+      </div>
+
+      <!-- 실시간 변신 사람(초등학생) SVG 캐릭터 캔버스 박스 -->
+      <div class="relative w-48 sm:w-56 h-60 bg-gradient-to-b from-sky-100 to-sky-300 rounded-3xl p-2 my-auto border-3 border-white shadow-inner flex items-center justify-center">
+        
+        <svg id="poseHumanSvg" viewBox="0 0 200 240" class="w-full h-full">
+          <!-- 수면 물결선 -->
+          <path d="M 0 170 Q 50 160 100 170 T 200 170 L 200 240 L 0 240 Z" fill="#0284c7" opacity="0.6"/>
+
+          <!-- 캐릭터 머리 -->
+          <circle id="poseHead" cx="100" cy="50" r="24" fill="#fde68a" stroke="#d97706" stroke-width="2"/>
+          <path d="M 78 45 Q 100 24 122 45 Z" fill="#0284c7"/>
+          
+          <!-- 캐릭터 몸통 (구명조끼 착용) -->
+          <rect id="poseTorso" x="72" y="75" width="56" height="60" rx="10" fill="#f97316" stroke="#c2410c" stroke-width="3"/>
+          <rect x="80" y="95" width="40" height="8" fill="#ffffff" opacity="0.9"/>
+
+          <!-- 인터랙티브 팔 (동작별 실시간 변환) -->
+          <!-- 기본: 크로스 락 자세 (코/입 막고 어깨 결속) -->
+          <g id="poseArmsGroup">
+            <path id="poseLeftArm" d="M 72 85 Q 95 65 102 55" fill="none" stroke="#fed7aa" stroke-width="12" stroke-linecap="round"/>
+            <path id="poseRightArm" d="M 128 85 Q 100 80 76 85" fill="none" stroke="#fed7aa" stroke-width="12" stroke-linecap="round"/>
+          </g>
+
+          <!-- 인터랙티브 다리 (직립, 잎새뜨기, H.E.L.P 무릎안기) -->
+          <g id="poseLegsGroup">
+            <line id="poseLeftLeg" x1="84" y1="135" x2="84" y2="200" stroke="#0369a1" stroke-width="14" stroke-linecap="round"/>
+            <line id="poseRightLeg" x1="116" y1="135" x2="116" y2="200" stroke="#0369a1" stroke-width="14" stroke-linecap="round"/>
+          </g>
+
+          <!-- 자세별 이름 태그 -->
+          <text id="poseCurrentLabel" x="100" y="230" font-size="11" font-weight="900" fill="#ffffff" text-anchor="middle">
+            현재: 크로스 락 자세
+          </text>
+        </svg>
+
+        <!-- 판정 피드백 뱃지 -->
+        <div id="poseJudgeBadge" class="hidden absolute top-2 inset-x-4 bg-emerald-500 text-white font-display font-black text-center py-1 rounded-xl shadow-lg animate-bounce">
+          PERFECT!! +200pt
+        </div>
+      </div>
+
+      <!-- 4대 생존 자세 선택 버튼 4종 -->
+      <div class="grid grid-cols-2 gap-2 w-full max-w-md">
+        <button onclick="doPoseAction('cross')" class="btn-3d py-2.5 bg-cyan-500 text-white font-bold text-xs rounded-xl shadow-pop text-center">
+          1. 🛡️ 크로스 락 입수<br><span class="text-[10px] font-normal opacity-90">코·입 막고 어깨 결속</span>
+        </button>
+        <button onclick="doPoseAction('help')" class="btn-3d py-2.5 bg-amber-500 text-white font-bold text-xs rounded-xl shadow-pop text-center">
+          2. 🥶 H.E.L.P 체온사수<br><span class="text-[10px] font-normal opacity-90">무릎 안고 웅크리기</span>
+        </button>
+        <button onclick="doPoseAction('star')" class="btn-3d py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-pop text-center">
+          3. 🍃 잎새뜨기 (누워뜨기)<br><span class="text-[10px] font-normal opacity-90">하늘 보고 힘 빼기</span>
+        </button>
+        <button onclick="doPoseAction('huddle')" class="btn-3d py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-pop text-center">
+          4. 🤝 허들 (Huddle)<br><span class="text-[10px] font-normal opacity-90">친구들과 원형 결속</span>
+        </button>
+      </div>
+
+      <div class="w-full flex justify-between items-center mt-1 pt-2 border-t border-slate-200 text-xs">
+        <span class="font-bold text-slate-500">진행도: <span id="poseProgressTxt">1</span>/4</span>
+        <button id="btnPoseNext" class="btn-3d px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl shadow-pop">
+          워터슬라이드 레이스로 ➔
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 7: 초고속 워터슬라이드 비상 탈출 레이스 (방향키 & 안전자세) -->
+    <!-- ================================================================== -->
+    <section id="screenSlide" class="hidden flex flex-col items-center justify-between h-full py-1">
+      <div class="w-full flex items-center justify-between px-2 mb-1">
+        <div>
+          <span class="px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-full font-bold text-[10px]">STAGE 6</span>
+          <h3 class="font-display font-black text-lg sm:text-xl text-ocean-950 inline ml-1">워터슬라이드 탈출 레이스</h3>
+        </div>
+        <!-- 중도 포기/건너뛰기 버튼 -->
+        <div class="flex gap-1.5">
+          <button id="btnExitSlideHome" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-[11px] font-bold rounded-lg text-slate-700">
+            🏠 홈으로
+          </button>
+          <button id="btnSkipSlide" class="px-2 py-1 bg-cyan-100 hover:bg-cyan-200 text-[11px] font-bold rounded-lg text-cyan-800">
+            ⏩ 다음(뗏목)으로
+          </button>
+        </div>
+      </div>
+
+      <!-- 상단 레이스 HUD 바 -->
+      <div class="w-full max-w-xl bg-slate-900 text-white px-3 py-1.5 rounded-xl border border-slate-700 flex items-center justify-between text-xs mb-1">
+        <div>거리: <span id="hudSlideDist" class="font-display font-black text-amber-400">1,200m</span></div>
+        <div>속도: <span id="hudSlideSpd" class="font-display font-black text-cyan-400">45 km/h</span></div>
+        <div>구명환: <span id="hudSlideRings" class="font-display font-black text-emerald-400">0개</span></div>
+      </div>
+
+      <!-- 60FPS 캔버스 뷰포트 -->
+      <div class="w-full max-w-xl h-60 sm:h-72 bg-sky-950 rounded-2xl overflow-hidden relative border-3 border-cyan-500 shadow-inner">
+        <canvas id="canvasSlideRace" class="w-full h-full block"></canvas>
+        
+        <!-- 급커브/안전자세 경보 오버레이 -->
+        <div id="slideAlertOverlay" class="hidden absolute top-3 inset-x-8 bg-rose-600/90 text-white font-black text-xs py-1.5 rounded-full text-center animate-ping">
+          ⚠️ 급커브 & 소용돌이! 안전자세를 꾹 누르세요!
+        </div>
+      </div>
+
+      <!-- 대형 태블릿 방향키 및 조작 패널 -->
+      <div class="w-full max-w-xl flex items-center justify-between gap-3 mt-1.5">
+        <!-- 좌/우 조향 방향키 -->
+        <div class="flex gap-2">
+          <button id="btnSlideLeft" class="btn-3d w-16 sm:w-20 py-3 bg-cyan-600 active:bg-cyan-700 text-white font-black text-base sm:text-lg rounded-2xl shadow-pop flex flex-col items-center">
+            <span>◀ ⬅️</span>
+            <span class="text-[10px]">왼쪽</span>
+          </button>
+          <button id="btnSlideRight" class="btn-3d w-16 sm:w-20 py-3 bg-cyan-600 active:bg-cyan-700 text-white font-black text-base sm:text-lg rounded-2xl shadow-pop flex flex-col items-center">
+            <span>➡️ ▶</span>
+            <span class="text-[10px]">오른쪽</span>
+          </button>
+        </div>
+
+        <!-- 액션 버튼 (가속 패들 연타 + 안전자세 홀드) -->
+        <div class="flex gap-2">
+          <button id="btnSlidePaddle" class="btn-3d px-3 sm:px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-xs sm:text-sm rounded-2xl shadow-pop flex flex-col items-center">
+            <span>▲ ⚡</span>
+            <span>패들 가속!</span>
+          </button>
+          <button id="btnSlideSafePose" class="btn-3d px-3 sm:px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs sm:text-sm rounded-2xl shadow-pop flex flex-col items-center">
+            <span>▼ 🛡️</span>
+            <span>안전자세 (홀드)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 8: 구명뗏목 복원 & 호루라기 구조 신호 -->
+    <!-- ================================================================== -->
+    <section id="screenRaft" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-xs">STAGE 7 (FINAL)</span>
+        <h3 class="font-display font-black text-xl sm:text-2xl text-ocean-950 mt-1">뒤집힌 구명뗏목 복원 & 헬기 구조 신호</h3>
+        <p id="raftPhaseDesc" class="text-xs sm:text-sm text-slate-600 font-dodum">뒤집힌 뗏목을 바로 세우기 위해 파워 발차기를 연타하세요!</p>
+      </div>
+
+      <!-- 구명뗏목 그래픽 인터랙션 뷰 -->
+      <div class="w-full max-w-xl bg-gradient-to-b from-sky-400 to-ocean-800 rounded-3xl p-4 flex flex-col items-center relative my-auto border-3 border-white shadow-xl min-h-[260px] justify-center">
+        
+        <!-- 해경 헬리콥터 일러스트 (상단 대기) -->
+        <div id="rescueHeli" class="text-4xl animate-bounce mb-2 transition-all duration-700">
+          🚁
+        </div>
+
+        <!-- 주황색 텐트형 구명뗏목 SVG -->
+        <svg id="svgLiferaft" viewBox="0 0 240 130" class="w-56 sm:w-64 h-auto drop-shadow-2xl transition-transform duration-500">
+          <!-- 뗏목 하부 튜브 -->
+          <ellipse cx="120" cy="95" rx="90" ry="24" fill="#ea580c" stroke="#9a3412" stroke-width="4"/>
+          <!-- 뗏목 캐노피 텐트 (주황색 지붕) -->
+          <path d="M 50 90 Q 120 20 190 90 Z" fill="#f97316" stroke="#c2410c" stroke-width="3"/>
+          <!-- 탑승 입구 -->
+          <ellipse cx="120" cy="85" rx="30" ry="16" fill="#1e293b"/>
+          <!-- 반사 테이프 -->
+          <rect x="75" y="55" width="12" height="6" fill="#ffffff" rx="1"/>
+          <rect x="153" y="55" width="12" height="6" fill="#ffffff" rx="1"/>
+          <!-- 승선 구조 대원들 -->
+          <circle cx="110" cy="82" r="7" fill="#fde68a"/>
+          <circle cx="130" cy="82" r="7" fill="#fde68a"/>
+        </svg>
+
+        <!-- 게이지 바 (발차기 파워 / 호루라기 구조 신호 데시벨) -->
+        <div class="w-full max-w-xs bg-slate-900/60 p-1.5 rounded-full border border-white/40 mt-3">
+          <div id="raftPowerBar" class="h-3 bg-gradient-to-r from-yellow-400 to-emerald-400 rounded-full transition-all duration-100" style="width: 15%;"></div>
+        </div>
+        <div id="raftStatusText" class="text-xs font-black text-yellow-300 mt-1">발차기 파워: 15%</div>
+
+      </div>
+
+      <!-- 액션 버튼 (Phase 1: 발차기 연타, Phase 2: 호루라기 불기) -->
+      <div class="w-full max-w-sm flex flex-col gap-2">
+        <button id="btnRaftAction" class="btn-3d w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-display font-black text-lg rounded-2xl shadow-jelly-btn border-b-4 border-orange-700">
+          🦶 파워 발차기 연타!! (뗏목 뒤집기)
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 9: 비행기 해양 불시착(Ditching) 60FPS 시네마틱 스페셜 미션 -->
+    <!-- ================================================================== -->
+    <section id="screenPlane" class="hidden flex flex-col items-center justify-between h-full py-1">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-rose-100 text-rose-700 rounded-full font-bold text-xs">SPECIAL MISSION</span>
+        <h3 class="font-display font-black text-xl sm:text-2xl text-rose-950 mt-1">비행기 바다 불시착! 생존 대탈출</h3>
+        <p class="text-xs sm:text-sm text-slate-600 font-dodum">수학여행 비행기 비상 불시착 상황! 생존수영 기술로 전원 탈출하세요!</p>
+      </div>
+
+      <div class="w-full max-w-2xl bg-slate-950 border-3 border-rose-500 rounded-3xl p-3 flex flex-col items-center text-white relative shadow-2xl min-h-[360px] overflow-hidden my-auto">
+        
+        <!-- 상단 비상 HUD 바 -->
+        <div class="w-full flex items-center justify-between border-b border-rose-900 pb-2 mb-2 z-10 text-xs">
+          <span class="font-black text-rose-400 flex items-center gap-1">
+            <span class="animate-ping inline-block w-2 h-2 rounded-full bg-rose-500"></span>
+            <span>🚨 EMERGENCY OCEAN DITCHING SIMULATOR</span>
+          </span>
+          <div class="flex items-center gap-2">
+            <span id="planeStepBadge" class="bg-rose-600 px-2 py-0.5 rounded-full font-bold text-[10px]">시네마틱</span>
+            <button id="btnSkipCinema" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-[10px] text-cyan-300 rounded border border-cyan-500/40 font-bold active:scale-95">
+              ⏩ 영상 건너뛰기
+            </button>
+          </div>
+        </div>
+
+        <!-- 60FPS 비행기 불시착 캔버스 -->
+        <div id="planeCinemaBox" class="w-full relative rounded-2xl overflow-hidden border-2 border-slate-700 bg-black shadow-inner flex flex-col items-center h-64">
+          <canvas id="canvasPlaneDitch" class="w-full h-full block"></canvas>
+          
+          <div class="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
+            <div class="px-2 py-0.5 bg-black/70 rounded text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
+              ALT: <span id="hudAlt" class="font-bold text-yellow-300">12,000</span> FT
+            </div>
+            <div class="px-2 py-0.5 bg-black/70 rounded text-[10px] font-mono text-cyan-400 border border-cyan-500/30">
+              SPD: <span id="hudSpd" class="font-bold text-white">450</span> KTS
+            </div>
+          </div>
+
+          <div id="planeSubtitleBox" class="absolute bottom-2 inset-x-4 bg-black/80 backdrop-blur-sm border border-white/20 p-2 rounded-xl text-center pointer-events-none">
+            <span id="planeSubtitleText" class="text-xs sm:text-sm font-bold text-yellow-300">
+              ✈️ "제주도로 향하던 항공기가 맑은 하늘을 순항 중입니다..."
+            </span>
+          </div>
+        </div>
+
+        <!-- 인터랙티브 미션 영역 (시네마틱 중간중간 정지하며 호출됨) -->
+        <div id="planeInteractiveBox" class="hidden w-full flex-1 flex flex-col items-center justify-center text-center p-2 z-10">
+          
+          <!-- Step 1: 산소마스크 우선순위 퀴즈 -->
+          <div id="subPlaneO2Quiz" class="hidden flex-col items-center gap-3 w-full max-w-md">
+            <div class="text-xs font-black text-amber-300 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600">
+              ⚠️ 기내 압력 저하! 산소마스크가 내려왔습니다!
+            </div>
+            <p class="text-sm font-bold text-white">누구부터 산소마스크를 써야 할까요?</p>
+            <div class="flex flex-col gap-2 w-full mt-2">
+              <button id="btnO2Wrong" class="btn-3d w-full py-3 bg-slate-700 text-white font-bold rounded-xl border-2 border-slate-500 text-sm">
+                옆 사람(어린이/노약자)부터 씌워준다
+              </button>
+              <button id="btnO2Right" class="btn-3d w-full py-3 bg-slate-700 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold rounded-xl border-2 border-slate-500 text-sm transition-colors">
+                내가 먼저 쓴 후 다른 사람을 돕는다
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: 산소마스크 올바른 착용법 -->
+          <div id="subPlaneO2Wear" class="hidden flex-col items-center gap-2 w-full max-w-md">
+            <div class="text-[11px] font-black text-emerald-300 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-500">
+              ✅ 정답! 내가 의식을 잃으면 다른 사람을 도울 수 없어요!
+            </div>
+            <!-- 산소마스크 착용 일러스트 -->
+            <svg viewBox="0 0 100 100" class="w-24 h-24 my-1 drop-shadow-lg">
+              <circle cx="50" cy="50" r="40" fill="#fde68a" stroke="#d97706" stroke-width="2"/>
+              <circle cx="35" cy="40" r="5" fill="#334155"/>
+              <circle cx="65" cy="40" r="5" fill="#334155"/>
+              <path d="M 30 50 Q 50 35 70 50 L 60 75 Q 50 80 40 75 Z" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+              <line x1="10" y1="50" x2="30" y2="50" stroke="#334155" stroke-width="3"/>
+              <line x1="90" y1="50" x2="70" y2="50" stroke="#334155" stroke-width="3"/>
+            </svg>
+            <p class="text-sm font-bold text-white mb-1">올바른 산소마스크 착용법</p>
+            <button id="btnWearO2" class="btn-3d w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-display font-black text-sm rounded-xl shadow-lg border-2 border-emerald-400">
+              😷 코와 입을 모두 덮고 끈을 조여 착용!
+            </button>
+          </div>
+
+          <!-- Step 3: 충격 방지 자세 퀴즈 -->
+          <div id="subPlaneBraceQuiz" class="hidden flex-col items-center gap-3 w-full max-w-md">
+            <div class="text-xs font-black text-amber-300 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600">
+              ⚠️ 기장 방송: "비상 착수! Brace! Brace!"
+            </div>
+            <p class="text-sm font-bold text-white">안전한 충격 방지 자세는 무엇일까요?</p>
+            <div class="flex flex-col gap-2 w-full mt-2">
+              <button id="btnBraceWrong" class="btn-3d w-full py-3 bg-slate-700 text-white font-bold rounded-xl border-2 border-slate-500 text-sm">
+                허리를 꼿꼿이 세우고 등받이에 기댄다
+              </button>
+              <button id="btnBraceRight" class="btn-3d w-full py-3 bg-slate-700 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold rounded-xl border-2 border-slate-500 text-sm transition-colors">
+                머리를 앞좌석에 대고 무릎을 감싼다
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 4: 기내 충격 방지 자세 유지 -->
+          <div id="subPlaneBrace" class="hidden flex flex-col items-center gap-1 w-full max-w-md">
+            <div class="text-[11px] font-black text-emerald-300 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-500 mb-1">
+              ✅ 정답! 척추와 목을 보호해야 합니다!
+            </div>
+            
+            <svg viewBox="0 0 280 140" class="w-56 h-auto my-1 drop-shadow-xl bg-slate-900/90 rounded-2xl border border-slate-700 p-1">
+              <rect x="25" y="15" width="45" height="60" rx="15" fill="#0369a1" stroke="#38bdf8" stroke-width="3"/>
+              <path d="M 25 55 Q 45 45 70 55 L 70 75 L 25 75 Z" fill="#0ea5e9"/>
+              <ellipse cx="48" cy="45" rx="14" ry="2" fill="#ffffff" opacity="0.4"/>
+              
+              <path d="M 175 25 Q 185 15 195 25 L 195 110 L 165 110 Z" fill="#334155" stroke="#475569" stroke-width="2"/>
+              <rect x="168" y="30" width="24" height="20" rx="4" fill="#1e293b"/>
+              <rect x="170" y="35" width="20" height="10" rx="2" fill="#0284c7" opacity="0.7"/>
+              
+              <rect x="85" y="95" width="70" height="20" rx="5" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+              <path d="M 80 50 L 92 100" stroke="#334155" stroke-width="8" stroke-linecap="round"/>
+              
+              <path d="M 95 100 L 125 100 L 140 75" fill="none" stroke="#0284c7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 98 85 Q 125 45 160 50" fill="none" stroke="#f97316" stroke-width="18" stroke-linecap="round"/>
+              <circle cx="163" cy="50" r="14" fill="#fed7aa" stroke="#fb923c" stroke-width="2"/>
+              <path d="M 152 42 Q 165 30 176 45 Z" fill="#0284c7"/>
+              <path d="M 120 70 Q 145 60 142 80" fill="none" stroke="#fed7aa" stroke-width="8" stroke-linecap="round"/>
+              
+              <text x="140" y="130" font-size="9" font-weight="900" fill="#facc15" text-anchor="middle">HEAD DOWN! 머리를 숙이고 무릎 잡기</text>
+            </svg>
+
+            <button id="btnBraceHold" class="btn-3d w-full mt-2 py-3.5 bg-gradient-to-r from-rose-500 to-amber-500 text-white font-display font-black text-sm rounded-2xl shadow-lg">
+              🙇‍♂️ 충격 방지 자세 유지! (터치하기!)
+            </button>
+          </div>
+
+          <!-- Step 5: 구명조끼 기내 착용 (팽창 아님) -->
+          <div id="subPlaneVestWear" class="hidden flex-col items-center gap-2 w-full max-w-md">
+            <div class="text-[11px] font-black text-sky-300 bg-sky-950/80 px-3 py-1 rounded-full border border-sky-500 mb-2">
+              🌊 바다 착수 성공! 침착하게 구명조끼를 입으세요.
+            </div>
+            <p class="text-sm font-bold text-white mb-1">순서대로 구명조끼를 착용하세요.</p>
+            <button id="btnVestWear1" class="btn-3d w-full py-3 bg-slate-700 text-white font-bold rounded-xl border-2 border-slate-500 text-left px-5 text-sm transition-colors">
+              1️⃣ 조끼를 머리 위로 뒤집어 쓰기
+            </button>
+            <button id="btnVestWear2" class="btn-3d w-full py-3 bg-slate-700 text-slate-400 font-bold rounded-xl border-2 border-slate-500 text-left px-5 text-sm pointer-events-none opacity-50 transition-colors">
+              2️⃣ 허리끈을 당겨 몸에 맞게 버클 채우기
+            </button>
+          </div>
+
+          <!-- Step 6: 탈출문 앞 구명조끼 팽창 (기존 PULL) -->
+          <div id="subPlaneVest" class="hidden flex flex-col items-center gap-1.5 w-full max-w-md">
+            <div class="text-xs font-black text-rose-400 bg-rose-950/80 px-3 py-1 rounded-full border border-rose-600">
+              🚨 결정적 수칙: 기내에서 부풀리면 탈출구에 끼여 절대 탈출 불가!
+            </div>
+            <p class="text-[11px] font-bold text-cyan-200">탈출문 밖으로 나와 빨간 손잡이(PULL)를 힘차게 당기세요!</p>
+
+            <svg viewBox="0 0 240 140" class="w-56 h-auto drop-shadow-2xl bg-slate-900/90 rounded-2xl border border-slate-700 p-1.5">
+              <path d="M 90 20 Q 120 40 150 20 Q 120 5 90 20 Z" fill="#334155"/>
+              
+              <g id="aeroChambersGraphic">
+                <path id="aeroChamberL" d="M 68 25 C 50 40, 52 85, 72 105 C 84 105, 88 95, 82 55 Z" fill="#ca8a04" stroke="#eab308" stroke-width="3" class="transition-all duration-300"/>
+                <path id="aeroChamberR" d="M 172 25 C 190 40, 188 85, 168 105 C 156 105, 152 95, 158 55 Z" fill="#ca8a04" stroke="#eab308" stroke-width="3" class="transition-all duration-300"/>
+              </g>
+
+              <line x1="82" y1="75" x2="158" y2="75" stroke="#0f172a" stroke-width="4"/>
+              <rect x="114" y="70" width="12" height="10" fill="#facc15" rx="2" stroke="#0f172a"/>
+              
+              <rect x="64" y="50" width="16" height="8" fill="#ffffff" opacity="0.9" rx="1"/>
+              <rect x="160" y="50" width="16" height="8" fill="#ffffff" opacity="0.9" rx="1"/>
+
+              <path d="M 62 40 L 52 45" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="50" cy="46" r="3" fill="#ef4444"/>
+              <rect x="174" y="38" width="5" height="12" fill="#ef4444" rx="1"/>
+
+              <rect x="68" y="90" width="8" height="15" fill="#94a3b8" rx="2"/>
+              <rect x="164" y="90" width="8" height="15" fill="#94a3b8" rx="2"/>
+
+              <g id="pullTabGroup" class="cursor-pointer animate-bounce">
+                <line x1="72" y1="105" x2="72" y2="116" stroke="#dc2626" stroke-width="2"/>
+                <rect x="60" y="116" width="24" height="12" fill="#dc2626" rx="3" stroke="#b91c1c"/>
+                <text x="72" y="125" font-size="7" font-weight="900" fill="#ffffff" text-anchor="middle">PULL</text>
+
+                <line x1="168" y1="105" x2="168" y2="116" stroke="#dc2626" stroke-width="2"/>
+                <rect x="156" y="116" width="24" height="12" fill="#dc2626" rx="3" stroke="#b91c1c"/>
+                <text x="168" y="125" font-size="7" font-weight="900" fill="#ffffff" text-anchor="middle">PULL</text>
+              </g>
+            </svg>
+
+            <div id="txtVestInflateStatus" class="text-[10px] font-black text-yellow-300">
+              상태: 미팽창 (탈출문 통과 후 레버를 당겨 가스를 주입하세요)
+            </div>
+
+            <button id="btnPullInflator" class="btn-3d w-full py-3 bg-rose-600 text-white font-black text-sm rounded-2xl shadow-lg mt-1">
+              🔻 빨간 손잡이 당기기 (PULL TO INFLATE)
+            </button>
+          </div>
+
+          <!-- Step 7: 슬라이드 강하 & 헬기 구조 완료 -->
+          <div id="subPlaneSea" class="hidden flex flex-col items-center gap-2 w-full max-w-md">
+            <div class="text-xs font-black text-cyan-300 bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-500">
+              🚁 비상 슬라이드 강하 & 해경 써치라이트 포착!
+            </div>
+
+            <svg viewBox="0 0 280 130" class="w-64 h-auto my-1 drop-shadow-xl bg-slate-900 rounded-2xl border border-cyan-700/50">
+              <rect x="0" y="65" width="280" height="65" fill="#0c4a6e"/>
+              <path d="M 0 75 Q 30 70 60 75 T 120 75 T 180 75 T 240 75 T 280 75 L 280 130 L 0 130 Z" fill="#075985" opacity="0.8"/>
+              
+              <polygon points="140,5 60,110 220,110" fill="url(#searchlightBeam)" opacity="0.6"/>
+              
+              <defs>
+                <linearGradient id="searchlightBeam" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9"/>
+                  <stop offset="100%" stop-color="#fef08a" stop-opacity="0.1"/>
+                </linearGradient>
+              </defs>
+
+              <g transform="translate(105, 5)">
+                <ellipse cx="35" cy="12" rx="20" ry="7" fill="#ffffff"/>
+                <line x1="5" y1="12" x2="5" y2="2" stroke="#ffffff" stroke-width="2"/>
+                <ellipse cx="5" cy="2" rx="4" ry="2" fill="#ffffff"/>
+                <ellipse cx="35" cy="5" rx="35" ry="1.5" fill="#38bdf8" opacity="0.8"/>
+                <circle cx="35" cy="14" r="3" fill="#fef08a"/>
+              </g>
+
+              <g transform="translate(100, 70)">
+                <ellipse cx="40" cy="25" rx="42" ry="12" fill="#ea580c"/>
+                <path d="M 10 24 Q 40 -2 70 24 Z" fill="#f97316" stroke="#c2410c" stroke-width="2"/>
+                <ellipse cx="40" cy="20" rx="14" ry="8" fill="#1e293b"/>
+                <circle cx="35" cy="18" r="4" fill="#fde68a"/>
+                <circle cx="45" cy="18" r="4" fill="#fde68a"/>
+                <circle cx="-5" cy="25" r="6" fill="#f97316" stroke="#ffffff" stroke-width="2"/>
+              </g>
+
+              <text x="140" y="122" font-size="9" font-weight="900" fill="#38bdf8" text-anchor="middle">TEAM RESCUE! 전원 안전 승선 완료</text>
+            </svg>
+
+            <p class="text-xs text-slate-300">비상 슬라이드를 타고 바다로 탈출하여 전원 구조되었습니다!</p>
+            <button id="btnPlaneDone" class="btn-3d w-full mt-1 py-3 bg-emerald-500 text-white font-display font-black text-sm sm:text-base rounded-2xl shadow-lg">
+              🏆 항공 불시착 실전 미션 완료! (+1,000pt)
+            </button>
+          </div>
+
+        </div>
+
+        <!-- 하단 컨트롤 -->
+        <div class="w-full flex justify-between items-center mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+          <button id="btnReplayCinema" class="text-cyan-300 hover:underline">
+            🔄 불시착 영상 다시보기
+          </button>
+          <button onclick="gotoScreen('screenIntro')" class="text-slate-400 hover:text-white">
+            🏠 메인 화면으로 돌아가기
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SCREEN 10: 최종 수료 인증서 & 학급 명예의 전당 -->
+    <!-- ================================================================== -->
+    <section id="screenCert" class="hidden flex flex-col items-center justify-between h-full py-2">
+      <div class="text-center mb-1">
+        <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-bold text-xs">COURSE COMPLETE</span>
+        <h3 class="font-display font-black text-2xl sm:text-3xl text-ocean-950 mt-1">🎉 생존수영 마스터 수료식!</h3>
+      </div>
+
+      <!-- 수료 인증서 카드 -->
+      <div class="w-full max-w-md bg-gradient-to-b from-amber-50 to-orange-50 border-4 border-amber-400 rounded-3xl p-4 sm:p-6 text-center shadow-2xl relative my-auto">
+        <div class="text-xs font-black text-amber-700 tracking-widest mb-1">CERTIFICATE OF SURVIVAL SWIMMING</div>
+        <h4 class="font-display font-black text-2xl text-ocean-900 mb-2">생존수영 특공대 수료 인증서</h4>
+        
+        <div class="w-16 h-16 mx-auto my-2 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-3xl shadow-md border-2 border-white">
+          🥇
+        </div>
+
+        <p class="text-sm font-bold text-slate-700 mb-1">
+          <span id="certClassTxt" class="text-ocean-700">4학년 2반</span>
+          <span id="certNameTxt" class="text-ocean-900 font-black text-base">김바다</span> 대원
+        </p>
+
+        <p class="text-xs text-slate-600 font-dodum leading-relaxed mb-3">
+          위 학생은 집에서 짐 싸기부터 버스 안전, 수영장 에티켓, 구명조끼 완벽 체결, 실전 생존자세 및 해상 조난 탈출 훈련을 성실히 이수하였으므로 본 수료증을 수여합니다.
+        </p>
+
+        <!-- 최종 점수 & 등급 뱃지 -->
+        <div class="flex items-center justify-center gap-4 bg-white/80 p-2.5 rounded-2xl border border-amber-200">
+          <div>
+            <div class="text-[10px] text-slate-500 font-bold">총 생존 점수</div>
+            <div id="certScoreTxt" class="font-display font-black text-lg text-amber-600">3,450 pt</div>
+          </div>
+          <div class="h-8 w-px bg-slate-300"></div>
+          <div>
+            <div class="text-[10px] text-slate-500 font-bold">마스터 등급</div>
+            <div id="certGradeBadge" class="font-display font-black text-lg text-emerald-600">S 등급 (완벽)</div>
+          </div>
+        </div>
+
+        <div class="text-[10px] text-slate-400 font-bold mt-3">생존수영 안전지킴이 교실</div>
+      </div>
+
+      <!-- 명예의 전당 & 다시하기 버튼 -->
+      <div class="w-full max-w-md flex gap-2 mt-2">
+        <button onclick="gotoScreen('screenIntro')" class="btn-3d flex-1 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-sm rounded-xl shadow-pop">
+          🔄 처음부터 다시 도전!
+        </button>
+        <button id="btnOpenPlaneSpecial" class="btn-3d flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-sm rounded-xl shadow-pop">
+          ✈️ 비행기 불시착 스페셜
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================================================================== -->
+  <!-- JAVASCRIPT: 게임 로직, Web Audio 사운드, 60FPS 엔진 & 안전 방어 코드 -->
+  <!-- ==================================================================== -->
+  <script>
+    /* --------------------------------------------------------------------------
+       1. 전역 상태 (Global State)
+       -------------------------------------------------------------------------- */
+    const G = {
+      score: 0,
+      partner: 'otter',
+      studentClass: '4학년 2반',
+      studentName: '김바다',
+      currentScreen: 'screenIntro',
+      soundMuted: false
+    };
+
+    /* --------------------------------------------------------------------------
+       2. Web Audio API 사운드 엔진 (무결점, 외부 의존성 없음)
+       -------------------------------------------------------------------------- */
+    let audioCtx = null;
+    function getAC() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    const SFX = {
+      click() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const osc = ac.createOscillator();
+          const gain = ac.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, ac.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(800, ac.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, ac.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(ac.destination);
+          osc.start();
+          osc.stop(ac.currentTime + 0.08);
+        } catch(e) {}
+      },
+      clickLock() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const osc = ac.createOscillator();
+          const gain = ac.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(400, ac.currentTime);
+          osc.frequency.setValueAtTime(900, ac.currentTime + 0.04);
+          gain.gain.setValueAtTime(0.3, ac.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(ac.destination);
+          osc.start();
+          osc.stop(ac.currentTime + 0.12);
+        } catch(e) {}
+      },
+      splash() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const bufferSize = ac.sampleRate * 0.25;
+          const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.3;
+          }
+          const noise = ac.createBufferSource();
+          noise.buffer = buffer;
+          const filter = ac.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(800, ac.currentTime);
+          filter.frequency.linearRampToValueAtTime(300, ac.currentTime + 0.25);
+          const gain = ac.createGain();
+          gain.gain.setValueAtTime(0.3, ac.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.25);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(ac.destination);
+          noise.start();
+        } catch(e) {}
+      },
+      whistle() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const osc1 = ac.createOscillator();
+          const osc2 = ac.createOscillator();
+          const gain = ac.createGain();
+          osc1.type = 'sine';
+          osc2.type = 'sine';
+          osc1.frequency.setValueAtTime(2600, ac.currentTime);
+          osc2.frequency.setValueAtTime(2640, ac.currentTime); // 비트 떨림
+          gain.gain.setValueAtTime(0.25, ac.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.35);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ac.destination);
+          osc1.start();
+          osc2.start();
+          osc1.stop(ac.currentTime + 0.35);
+          osc2.stop(ac.currentTime + 0.35);
+        } catch(e) {}
+      },
+      wrong() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const osc = ac.createOscillator();
+          const gain = ac.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(160, ac.currentTime);
+          osc.frequency.linearRampToValueAtTime(100, ac.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.25, ac.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(ac.destination);
+          osc.start();
+          osc.stop(ac.currentTime + 0.2);
+        } catch(e) {}
+      },
+      fanfare() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            const t = ac.currentTime + idx * 0.09;
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.25, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.start(t);
+            osc.stop(t + 0.25);
+          });
+        } catch(e) {}
+      },
+      airHiss() {
+        if (G.soundMuted) return;
+        try {
+          const ac = getAC();
+          const bufferSize = ac.sampleRate * 0.4;
+          const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+          const noise = ac.createBufferSource();
+          noise.buffer = buffer;
+          const filter = ac.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(2200, ac.currentTime);
+          const gain = ac.createGain();
+          gain.gain.setValueAtTime(0.35, ac.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.4);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(ac.destination);
+          noise.start();
+        } catch(e) {}
+      }
+    };
+
+    /* --------------------------------------------------------------------------
+       3. 화면 전환 및 점수 관리
+       -------------------------------------------------------------------------- */
+    const SCREENS = [
+      'screenIntro', 'screenPack', 'screenBus', 'screenHammer',
+      'screenWashVest', 'screenPose', 'screenSlide', 'screenRaft',
+      'screenPlane', 'screenCert'
+    ];
+
+    function gotoScreen(screenId) {
+      SCREENS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      const target = document.getElementById(screenId);
+      if (target) {
+        target.classList.remove('hidden');
+        G.currentScreen = screenId;
+      }
+      window.scrollTo(0, 0);
+    }
+
+    function addScore(pts) {
+      G.score += pts;
+      const el = document.getElementById('topScoreText');
+      if (el) el.innerText = `${G.score.toLocaleString()} pt`;
+    }
+
+    /* --------------------------------------------------------------------------
+       4. STAGE 1: 짐 싸기 챌린지 로직
+       -------------------------------------------------------------------------- */
+    const PACK_ITEMS = [
+      { id: 'suit', name: '수영복', icon: '🩱', needed: true },
+      { id: 'cap', name: '수영모', icon: '🧢', needed: true },
+      { id: 'goggle', name: '수경', icon: '🥽', needed: true },
+      { id: 'towel', name: '비치타올', icon: '🏖️', needed: true },
+      { id: 'bag', name: '방수백', icon: '🎒', needed: true },
+      { id: 'bottle', name: '개인물통', icon: '🧴', needed: true },
+      { id: 'glass', name: '유리병', icon: '🍾', needed: false, reason: '유리병은 깨지면 큰 부상 위험!' },
+      { id: 'gum', name: '풍선껌', icon: '🍬', needed: false, reason: '물속에서 음식물은 기도 질식 위험!' },
+      { id: 'phone', name: '스마트폰', icon: '📱', needed: false, reason: '침수 및 분실 위험!' },
+      { id: 'necklace', name: '목걸이', icon: '📿', needed: false, reason: '걸림 사고 및 상해 위험!' }
+    ];
+
+    let packedItemIds = new Set();
+
+    function initPackStage() {
+      packedItemIds.clear();
+      updatePackUI();
+      const grid = document.getElementById('packItemsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      PACK_ITEMS.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-3d p-2 bg-white border-2 border-slate-200 rounded-2xl flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all';
+        btn.innerHTML = `
+          <span class="text-3xl">${item.icon}</span>
+          <span class="text-xs font-bold text-slate-700 mt-1">${item.name}</span>
+        `;
+        btn.onclick = () => handlePackItem(item, btn);
+        grid.appendChild(btn);
+      });
+    }
+
+    function handlePackItem(item, btn) {
+      if (item.needed) {
+        if (!packedItemIds.has(item.id)) {
+          packedItemIds.add(item.id);
+          SFX.clickLock();
+          addScore(100);
+          btn.classList.add('opacity-40', 'pointer-events-none', 'bg-emerald-50', 'border-emerald-400');
+          updatePackUI();
+        }
+      } else {
+        SFX.wrong();
+        btn.classList.add('shake-reject', 'border-rose-500', 'bg-rose-50');
+        setTimeout(() => btn.classList.remove('shake-reject'), 400);
+        showToast(`⚠️ ${item.name}: ${item.reason}`);
+      }
+    }
+
+    function updatePackUI() {
+      const countEl = document.getElementById('packCountTxt');
+      const badgeBox = document.getElementById('packedListBadges');
+      const nextBtn = document.getElementById('btnPackNext');
+
+      if (countEl) countEl.innerText = packedItemIds.size;
+      if (badgeBox) {
+        badgeBox.innerHTML = '';
+        packedItemIds.forEach(id => {
+          const it = PACK_ITEMS.find(x => x.id === id);
+          if (it) {
+            const b = document.createElement('span');
+            b.className = 'px-2 py-0.5 bg-cyan-200 text-cyan-900 rounded-lg text-[10px] font-bold';
+            b.innerText = `${it.icon} ${it.name}`;
+            badgeBox.appendChild(b);
+          }
+        });
+      }
+
+      if (packedItemIds.size === 6) {
+        SFX.fanfare();
+        if (nextBtn) {
+          nextBtn.disabled = false;
+          nextBtn.className = 'btn-3d px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl shadow-pop text-xs';
+        }
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'fixed bottom-6 inset-x-4 max-w-sm mx-auto bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-center font-bold border border-white/20 animate-bounce';
+      t.innerText = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2200);
+    }
+
+    /* --------------------------------------------------------------------------
+       5. STAGE 2: 버스 안전 탑승 로직
+       -------------------------------------------------------------------------- */
+    let busQueueCount = 0;
+    let seatbeltCount = 0;
+
+    function initBusStage() {
+      busQueueCount = 0;
+      seatbeltCount = 0;
+      const qC = document.getElementById('busQueueCount');
+      const sC = document.getElementById('seatbeltCount');
+      if (qC) qC.innerText = '0';
+      if (sC) sC.innerText = '0';
+
+      const sQueue = document.getElementById('subBusQueue');
+      const sBelts = document.getElementById('subBusSeatbelts');
+      const sMoving = document.getElementById('subBusMoving');
+      if (sQueue) sQueue.classList.remove('hidden');
+      if (sBelts) sBelts.classList.add('hidden');
+      if (sMoving) sMoving.classList.add('hidden');
+
+      // 큐 버튼 초기화
+      document.querySelectorAll('.queue-btn').forEach(btn => {
+        btn.classList.remove('opacity-20', 'pointer-events-none');
+        btn.onclick = () => {
+          SFX.click();
+          busQueueCount++;
+          if (qC) qC.innerText = busQueueCount;
+          btn.classList.add('opacity-20', 'pointer-events-none');
+          if (busQueueCount >= 4) {
+            SFX.fanfare();
+            addScore(150);
+            setTimeout(() => {
+              if (sQueue) sQueue.classList.add('hidden');
+              if (sBelts) sBelts.classList.remove('hidden');
+            }, 500);
+          }
+        };
+      });
+
+      // 벨트 버튼 초기화
+      document.querySelectorAll('.belt-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-500', 'text-white', 'pointer-events-none');
+        btn.onclick = () => {
+          SFX.clickLock();
+          seatbeltCount++;
+          if (sC) sC.innerText = seatbeltCount;
+          btn.innerText = '✅ 체결 완료!';
+          btn.classList.add('bg-emerald-500', 'text-white', 'pointer-events-none');
+          if (seatbeltCount >= 4) {
+            SFX.fanfare();
+            addScore(200);
+            setTimeout(() => {
+              if (sBelts) sBelts.classList.add('hidden');
+              if (sMoving) sMoving.classList.remove('hidden');
+              const nextBtn = document.getElementById('btnBusNext');
+              if (nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.className = 'btn-3d px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl text-xs shadow-pop';
+              }
+            }, 600);
+          }
+        };
+      });
+    }
+
+    /* --------------------------------------------------------------------------
+       6. STAGE 3: 탈의실·샤워실 에티켓 뿅망치 헌터
+       -------------------------------------------------------------------------- */
+    let hammerTimer = 25;
+    let hammerTimerId = null;
+    let hammerCombo = 0;
+    const HAMMER_TARGETS = [
+      { id: 1, bad: true, text: '친구 몸 보고 웃기', icon: '😈' },
+      { id: 2, bad: true, text: '샤워실 바닥 뛰기', icon: '🏃‍♂️' },
+      { id: 3, bad: true, text: '수영장에 침 뱉기', icon: '🤮' },
+      { id: 4, bad: true, text: '샤워기로 물총 쏘기', icon: '🔫' },
+      { id: 5, bad: false, text: '살금살금 걷기', icon: '🚶‍♀️' },
+      { id: 6, bad: false, text: '친구 프라이버시 존중', icon: '🤝' },
+      { id: 7, bad: false, text: '비누칠 꼼꼼히 하기', icon: '🧼' }
+    ];
+
+    function initHammerStage() {
+      hammerTimer = 25;
+      hammerCombo = 0;
+      updateHammerUI();
+
+      const nextBtn = document.getElementById('btnHammerNext');
+      if (nextBtn) nextBtn.classList.add('hidden');
+
+      const grid = document.getElementById('hammerHolesGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      for (let i = 0; i < 6; i++) {
+        const hole = document.createElement('div');
+        hole.className = 'h-24 sm:h-28 bg-slate-100 border-2 border-slate-300 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden shadow-inner p-1';
+        hole.id = `hole_${i}`;
+        grid.appendChild(hole);
+      }
+
+      clearInterval(hammerTimerId);
+      spawnHammerMoles();
+      hammerTimerId = setInterval(() => {
+        hammerTimer--;
+        updateHammerUI();
+        if (hammerTimer <= 0) {
+          clearInterval(hammerTimerId);
+          SFX.fanfare();
+          if (nextBtn) nextBtn.classList.remove('hidden');
+        }
+      }, 1000);
+    }
+
+    function spawnHammerMoles() {
+      if (hammerTimer <= 0) return;
+      for (let i = 0; i < 6; i++) {
+        const hole = document.getElementById(`hole_${i}`);
+        if (!hole) continue;
+        hole.innerHTML = '';
+
+        if (Math.random() < 0.65) {
+          const item = HAMMER_TARGETS[Math.floor(Math.random() * HAMMER_TARGETS.length)];
+          const mole = document.createElement('button');
+          mole.className = `w-full h-full rounded-xl flex flex-col items-center justify-center p-1 active:scale-90 transition-all ${
+            item.bad ? 'bg-rose-50 border-2 border-rose-300' : 'bg-emerald-50 border-2 border-emerald-300'
+          }`;
+          mole.innerHTML = `
+            <span class="text-2xl sm:text-3xl">${item.icon}</span>
+            <span class="text-[10px] font-bold text-center mt-0.5 leading-tight ${item.bad ? 'text-rose-700' : 'text-emerald-700'}">${item.text}</span>
+          `;
+          mole.onclick = () => {
+            if (item.bad) {
+              SFX.clickLock();
+              hammerCombo++;
+              addScore(100 + hammerCombo * 20);
+              mole.innerHTML = `<span class="text-2xl">💥</span><span class="text-[10px] font-black text-rose-600">참교육!</span>`;
+              mole.classList.add('bg-amber-100', 'pointer-events-none');
+            } else {
+              SFX.wrong();
+              hammerCombo = 0;
+              addScore(-50);
+              mole.innerHTML = `<span class="text-2xl">❌</span><span class="text-[10px] font-black text-slate-600">바른 행동 감점!</span>`;
+            }
+            updateHammerUI();
+          };
+          hole.appendChild(mole);
+        }
+      }
+      setTimeout(spawnHammerMoles, 1400);
+    }
+
+    function updateHammerUI() {
+      const tEl = document.getElementById('hammerTimerTxt');
+      const cEl = document.getElementById('hammerComboTxt');
+      const fEl = document.getElementById('hammerFeverBadge');
+
+      if (tEl) tEl.innerText = `${hammerTimer}초`;
+      if (cEl) cEl.innerText = `${hammerCombo} COMBO`;
+      if (fEl) {
+        if (hammerCombo >= 4) fEl.classList.remove('hidden');
+        else fEl.classList.add('hidden');
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       7. STAGE 4: 물 적시기 5단계 & 구명조끼 가랑이 생명줄 체결
+       -------------------------------------------------------------------------- */
+    let washStep = 1;
+    let vestStep = 1;
+
+    function initWashVestStage() {
+      washStep = 1;
+      vestStep = 1;
+
+      // 타이틀 및 패널 리셋
+      const title = document.getElementById('washVestTitle');
+      const subtitle = document.getElementById('washVestSubtitle');
+      const pWash = document.getElementById('panelWashButtons');
+      const pVest = document.getElementById('panelVestButtons');
+      const nextBtn = document.getElementById('btnWashVestNext');
+
+      if (title) title.innerText = '심장에서 먼 곳부터 물 적시기';
+      if (subtitle) subtitle.innerText = '심장마비 예방! 1.발 ➔ 2.다리 ➔ 3.양팔 ➔ 4.얼굴 ➔ 5.가슴 순으로 터치하세요!';
+      if (pWash) pWash.classList.remove('hidden');
+      if (pVest) pVest.classList.add('hidden');
+      if (nextBtn) nextBtn.classList.add('hidden');
+
+      // 신체 색상 초기화
+      ['bodyFeet', 'bodyLegs', 'bodyArms', 'bodyHead', 'bodyChest'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.querySelectorAll('rect, ellipse, circle').forEach(child => {
+            child.setAttribute('fill', '#fed7aa');
+          });
+        }
+      });
+
+      // 구명조끼 레이어 숨김
+      ['vestLayerBody', 'vestLayerBuckles', 'vestLayerCrotch'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      updateWashButtons();
+    }
+
+    function doWashStep(step) {
+      if (step !== washStep) return;
+      SFX.splash();
+      showSplashEffect();
+
+      // 해당 신체 부위를 아쿠아 블루로 컬러링
+      let partId = '';
+      if (step === 1) partId = 'bodyFeet';
+      if (step === 2) partId = 'bodyLegs';
+      if (step === 3) partId = 'bodyArms';
+      if (step === 4) partId = 'bodyHead';
+      if (step === 5) partId = 'bodyChest';
+
+      const part = document.getElementById(partId);
+      if (part) {
+        part.querySelectorAll('rect, ellipse, circle').forEach(c => {
+          c.setAttribute('fill', '#38bdf8');
+        });
+      }
+
+      addScore(150);
+      washStep++;
+
+      if (washStep > 5) {
+        SFX.fanfare();
+        setTimeout(() => {
+          // 구명조끼 모드로 전환
+          const title = document.getElementById('washVestTitle');
+          const subtitle = document.getElementById('washVestSubtitle');
+          const pWash = document.getElementById('panelWashButtons');
+          const pVest = document.getElementById('panelVestButtons');
+
+          if (title) title.innerText = '구명조끼 3단계 완벽 착용';
+          if (subtitle) subtitle.innerText = '버클 체결과 특히 다리 사이 가랑이 생명줄을 반드시 연결하세요!';
+          if (pWash) pWash.classList.add('hidden');
+          if (pVest) pVest.classList.remove('hidden');
+        }, 600);
+      } else {
+        updateWashButtons();
+      }
+    }
+
+    function updateWashButtons() {
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById(`btnWash${i}`);
+        if (!btn) continue;
+        if (i < washStep) {
+          btn.disabled = true;
+          btn.className = 'btn-3d py-2 bg-emerald-100 border-2 border-emerald-400 text-emerald-800 font-bold text-xs rounded-xl text-left px-3';
+          btn.innerText = `✅ 완료!`;
+        } else if (i === washStep) {
+          btn.disabled = false;
+          btn.className = 'btn-3d py-2 bg-cyan-500 text-white font-bold text-xs rounded-xl text-left px-3 ring-2 ring-cyan-300';
+          btn.onclick = () => doWashStep(i);
+        } else {
+          btn.disabled = true;
+          btn.className = 'btn-3d py-2 bg-slate-100 border-2 border-slate-300 text-slate-400 font-bold text-xs rounded-xl text-left px-3';
+        }
+      }
+    }
+
+    function doVestStep(step) {
+      if (step !== vestStep) return;
+      SFX.clickLock();
+
+      if (step === 1) {
+        const layer = document.getElementById('vestLayerBody');
+        if (layer) layer.classList.remove('hidden');
+        addScore(150);
+        vestStep = 2;
+        updateVestButtons();
+      } else if (step === 2) {
+        const layer = document.getElementById('vestLayerBuckles');
+        if (layer) layer.classList.remove('hidden');
+        addScore(200);
+        vestStep = 3;
+        updateVestButtons();
+      } else if (step === 3) {
+        const layer = document.getElementById('vestLayerCrotch');
+        if (layer) layer.classList.remove('hidden');
+        addScore(300);
+        SFX.fanfare();
+        const nextBtn = document.getElementById('btnWashVestNext');
+        if (nextBtn) nextBtn.classList.remove('hidden');
+        updateVestButtons();
+      }
+    }
+
+    function updateVestButtons() {
+      const b1 = document.getElementById('btnVestStep1');
+      const b2 = document.getElementById('btnVestStep2');
+      const b3 = document.getElementById('btnVestStep3');
+
+      if (vestStep === 2 && b1 && b2) {
+        b1.disabled = true;
+        b1.className = 'btn-3d py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-pop';
+        b1.innerText = '✅ 1단계: 조끼 착용 완료!';
+        b2.disabled = false;
+        b2.className = 'btn-3d py-2.5 bg-amber-500 text-white font-bold text-xs rounded-xl shadow-pop ring-2 ring-amber-300';
+        b2.onclick = () => doVestStep(2);
+      } else if (vestStep === 3 && b2 && b3) {
+        b2.disabled = true;
+        b2.className = 'btn-3d py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-pop';
+        b2.innerText = '✅ 2단계: 버클 잠금 완료!';
+        b3.disabled = false;
+        b3.className = 'btn-3d py-2.5 bg-rose-600 text-white font-black text-xs rounded-xl shadow-pop ring-2 ring-rose-400 animate-bounce';
+        b3.onclick = () => doVestStep(3);
+      } else if (vestStep > 3 && b3) {
+        b3.disabled = true;
+        b3.className = 'btn-3d py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-pop';
+        b3.innerText = '✅ 3단계: 다리 가랑이 생명줄 완벽 체결!';
+      }
+    }
+
+    function showSplashEffect() {
+      const el = document.getElementById('splashAnimLayer');
+      if (el) {
+        el.classList.remove('opacity-0');
+        setTimeout(() => el.classList.add('opacity-0'), 350);
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       8. STAGE 5: 생존자세 동작 일치 챌린지 (사람 캐릭터 변신)
+       -------------------------------------------------------------------------- */
+    const POSES = [
+      { key: 'cross', name: '크로스 락 입수', desc: '코·입을 막고 반대쪽 구명조끼 어깨를 꽉 잡아 충격을 방어하세요!' },
+      { key: 'help', name: 'H.E.L.P 체온사수', desc: '무릎을 가슴으로 모아 안고 웅크려 체온 손실을 최소화하세요!' },
+      { key: 'star', name: '잎새뜨기 (누워뜨기)', desc: '몸에 힘을 빼고 하늘을 바라보며 대(大)자로 떠서 버티세요!' },
+      { key: 'huddle', name: '허들 (Huddle 원형 결속)', desc: '친구들과 팔짱을 끼고 둥글게 모여 체온과 사기를 나누세요!' }
+    ];
+
+    let currentPoseIdx = 0;
+
+    function initPoseStage() {
+      currentPoseIdx = 0;
+      updatePoseTargetUI();
+      doPoseAction('cross'); // 기본 자세
+    }
+
+    function updatePoseTargetUI() {
+      const p = POSES[currentPoseIdx];
+      const tEl = document.getElementById('poseTargetTitle');
+      const tipEl = document.getElementById('poseTargetTip');
+      const progEl = document.getElementById('poseProgressTxt');
+
+      if (tEl) tEl.innerText = `${currentPoseIdx + 1}. ${p.name}`;
+      if (tipEl) tipEl.innerText = p.desc;
+      if (progEl) progEl.innerText = `${currentPoseIdx + 1}`;
+    }
+
+    function doPoseAction(poseKey) {
+      SFX.click();
+      const armL = document.getElementById('poseLeftArm');
+      const armR = document.getElementById('poseRightArm');
+      const legL = document.getElementById('poseLeftLeg');
+      const legR = document.getElementById('poseRightLeg');
+      const label = document.getElementById('poseCurrentLabel');
+
+      if (poseKey === 'cross') {
+        if (armL) armL.setAttribute('d', 'M 72 85 Q 95 65 102 55');
+        if (armR) armR.setAttribute('d', 'M 128 85 Q 100 80 76 85');
+        if (legL) { legL.setAttribute('x2', '84'); legL.setAttribute('y2', '200'); }
+        if (legR) { legR.setAttribute('x2', '116'); legR.setAttribute('y2', '200'); }
+        if (label) label.innerText = '현재: 크로스 락 입수 자세';
+      } else if (poseKey === 'help') {
+        if (armL) armL.setAttribute('d', 'M 72 85 Q 85 140 100 135');
+        if (armR) armR.setAttribute('d', 'M 128 85 Q 115 140 100 135');
+        if (legL) { legL.setAttribute('x2', '92'); legL.setAttribute('y2', '150'); }
+        if (legR) { legR.setAttribute('x2', '108'); legR.setAttribute('y2', '150'); }
+        if (label) label.innerText = '현재: H.E.L.P 체온사수 자세';
+      } else if (poseKey === 'star') {
+        if (armL) armL.setAttribute('d', 'M 72 85 L 30 75');
+        if (armR) armR.setAttribute('d', 'M 128 85 L 170 75');
+        if (legL) { legL.setAttribute('x2', '60'); legL.setAttribute('y2', '190'); }
+        if (legR) { legR.setAttribute('x2', '140'); legR.setAttribute('y2', '190'); }
+        if (label) label.innerText = '현재: 잎새뜨기 (누워뜨기)';
+      } else if (poseKey === 'huddle') {
+        if (armL) armL.setAttribute('d', 'M 72 85 L 20 90');
+        if (armR) armR.setAttribute('d', 'M 128 85 L 180 90');
+        if (legL) { legL.setAttribute('x2', '88'); legL.setAttribute('y2', '165'); }
+        if (legR) { legR.setAttribute('x2', '112'); legR.setAttribute('y2', '165'); }
+        if (label) label.innerText = '현재: 허들 (원형 결속 자세)';
+      }
+
+      // 정답 일치 검사
+      if (poseKey === POSES[currentPoseIdx].key) {
+        SFX.clickLock();
+        addScore(200);
+        showPoseJudge(true);
+        currentPoseIdx++;
+        if (currentPoseIdx >= POSES.length) {
+          SFX.fanfare();
+          currentPoseIdx = 0;
+        }
+        setTimeout(updatePoseTargetUI, 600);
+      }
+    }
+
+    function showPoseJudge(perfect) {
+      const b = document.getElementById('poseJudgeBadge');
+      if (b) {
+        b.classList.remove('hidden');
+        b.innerText = perfect ? 'PERFECT!! +200pt' : 'MISS!';
+        setTimeout(() => b.classList.add('hidden'), 500);
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       9. STAGE 6: 워터슬라이드 탈출 레이스 60FPS 캔버스 엔진
+       -------------------------------------------------------------------------- */
+    let slideCanvas = null, slideCtx = null, slideAnimId = null;
+    let slideDist = 1200, slideSpeed = 45, slideRings = 0;
+    let slidePlayerX = 0; // -1 (왼쪽) ~ 1 (오른쪽)
+    let slideSteer = 0;
+    let slideIsSafePose = false;
+    let slideAlertTimer = 0;
+    let slideTrackParticles = [];
+
+    function initSlideStage() {
+      slideDist = 1200;
+      slideSpeed = 45;
+      slideRings = 0;
+      slidePlayerX = 0;
+      slideSteer = 0;
+      slideIsSafePose = false;
+      slideAlertTimer = 0;
+      slideTrackParticles = [];
+
+      slideCanvas = document.getElementById('canvasSlideRace');
+      if (slideCanvas) {
+        slideCtx = slideCanvas.getContext('2d');
+        slideCanvas.width = slideCanvas.parentElement.clientWidth || 500;
+        slideCanvas.height = slideCanvas.parentElement.clientHeight || 260;
+      }
+
+      cancelAnimationFrame(slideAnimId);
+      slideLoop();
+    }
+
+    function slideLoop() {
+      updateSlideGame();
+      renderSlideGame();
+      if (G.currentScreen === 'screenSlide') {
+        slideAnimId = requestAnimationFrame(slideLoop);
+      }
+    }
+
+    function updateSlideGame() {
+      // 조향 업데이트
+      slidePlayerX = Math.max(-0.85, Math.min(0.85, slidePlayerX + slideSteer * 0.05));
+
+      // 속도 및 거리 감소
+      const baseDecel = slideIsSafePose ? 0.3 : 0.15;
+      slideSpeed = Math.max(15, slideSpeed - baseDecel);
+      slideDist = Math.max(0, slideDist - (slideSpeed / 3.6) * 0.4);
+
+      // 경보 주기
+      slideAlertTimer++;
+      const alertEl = document.getElementById('slideAlertOverlay');
+      if (slideAlertTimer % 180 < 60) {
+        if (alertEl) alertEl.classList.remove('hidden');
+        if (!slideIsSafePose) slideSpeed = Math.max(12, slideSpeed - 0.8);
+      } else {
+        if (alertEl) alertEl.classList.add('hidden');
+      }
+
+      // 파티클 생성
+      if (slideCanvas && Math.random() < 0.6) {
+        slideTrackParticles.push({
+          x: (Math.random() - 0.5) * slideCanvas.width * 0.7,
+          y: 0,
+          scale: 0.1,
+          isRing: Math.random() < 0.25
+        });
+      }
+
+      // 파티클 이동 및 수집
+      for (let i = slideTrackParticles.length - 1; i >= 0; i--) {
+        const p = slideTrackParticles[i];
+        p.scale += 0.04;
+        p.y += p.scale * 12;
+
+        // 충돌 판정
+        if (p.scale > 0.8 && p.scale < 1.1) {
+          const pScreenX = (slideCanvas.width / 2) + p.x * (p.scale * 1.5);
+          const playerScreenX = (slideCanvas.width / 2) + slidePlayerX * (slideCanvas.width * 0.35);
+          if (Math.abs(pScreenX - playerScreenX) < 40 && p.isRing) {
+            slideRings++;
+            addScore(150);
+            SFX.clickLock();
+            slideTrackParticles.splice(i, 1);
+            continue;
+          }
+        }
+
+        if (p.y > (slideCanvas ? slideCanvas.height : 260)) {
+          slideTrackParticles.splice(i, 1);
+        }
+      }
+
+      // HUD 갱신
+      const dEl = document.getElementById('hudSlideDist');
+      const sEl = document.getElementById('hudSlideSpd');
+      const rEl = document.getElementById('hudSlideRings');
+      if (dEl) dEl.innerText = `${Math.round(slideDist)}m`;
+      if (sEl) sEl.innerText = `${Math.round(slideSpeed)} km/h`;
+      if (rEl) rEl.innerText = `${slideRings}개`;
+
+      // 완주 판정
+      if (slideDist <= 0) {
+        cancelAnimationFrame(slideAnimId);
+        SFX.splash();
+        SFX.fanfare();
+        addScore(500);
+        gotoScreen('screenRaft');
+        initRaftStage();
+      }
+    }
+
+    function renderSlideGame() {
+      if (!slideCtx || !slideCanvas) return;
+      const w = slideCanvas.width;
+      const h = slideCanvas.height;
+
+      // 워터 튜브 터널 배경
+      const grad = slideCtx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0284c7');
+      grad.addColorStop(0.6, '#38bdf8');
+      grad.addColorStop(1, '#0369a1');
+      slideCtx.fillStyle = grad;
+      slideCtx.fillRect(0, 0, w, h);
+
+      // 슬라이드 트랙 원근 가이드라인
+      slideCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      slideCtx.lineWidth = 3;
+      slideCtx.beginPath();
+      slideCtx.moveTo(w * 0.4, 0);
+      slideCtx.lineTo(w * 0.1, h);
+      slideCtx.moveTo(w * 0.6, 0);
+      slideCtx.lineTo(w * 0.9, h);
+      slideCtx.stroke();
+
+      // 파티클 & 구명환 렌더링
+      slideTrackParticles.forEach(p => {
+        const px = (w / 2) + p.x * (p.scale * 1.5);
+        const py = p.y;
+        if (p.isRing) {
+          slideCtx.font = `${Math.round(20 * p.scale)}px sans-serif`;
+          slideCtx.fillText('🛟', px - 10 * p.scale, py);
+        } else {
+          slideCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          slideCtx.beginPath();
+          slideCtx.arc(px, py, 4 * p.scale, 0, Math.PI * 2);
+          slideCtx.fill();
+        }
+      });
+
+      // 플레이어 (슬라이딩 학생 캐릭터)
+      const playerX = (w / 2) + slidePlayerX * (w * 0.35);
+      const playerY = h * 0.78;
+
+      // 물보라
+      slideCtx.fillStyle = '#bae6fd';
+      slideCtx.beginPath();
+      slideCtx.arc(playerX - 20, playerY + 12, 10 + Math.random() * 5, 0, Math.PI * 2);
+      slideCtx.arc(playerX + 20, playerY + 12, 10 + Math.random() * 5, 0, Math.PI * 2);
+      slideCtx.fill();
+
+      // 튜브 & 학생
+      slideCtx.fillStyle = slideIsSafePose ? '#10b981' : '#f97316';
+      slideCtx.beginPath();
+      slideCtx.ellipse(playerX, playerY + 8, 30, 16, 0, 0, Math.PI * 2);
+      slideCtx.fill();
+
+      slideCtx.fillStyle = '#fde68a';
+      slideCtx.beginPath();
+      slideCtx.arc(playerX, playerY - 8, 12, 0, Math.PI * 2);
+      slideCtx.fill();
+
+      // 안전자세 방어막
+      if (slideIsSafePose) {
+        slideCtx.strokeStyle = '#4ade80';
+        slideCtx.lineWidth = 3;
+        slideCtx.beginPath();
+        slideCtx.arc(playerX, playerY, 36, 0, Math.PI * 2);
+        slideCtx.stroke();
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       10. STAGE 7: 구명뗏목 복원 발차기 & 호루라기 구조 신호
+       -------------------------------------------------------------------------- */
+    let raftPower = 15;
+    let raftPhase = 1; // 1: 발차기 연타, 2: 호루라기 구조
+
+    function initRaftStage() {
+      raftPower = 15;
+      raftPhase = 1;
+      updateRaftUI();
+
+      const btn = document.getElementById('btnRaftAction');
+      const raftSvg = document.getElementById('svgLiferaft');
+      if (raftSvg) raftSvg.style.transform = 'rotate(180deg)'; // 뒤집힌 상태로 시작
+
+      if (btn) {
+        btn.innerText = '🦶 파워 발차기 연타!! (뗏목 뒤집기)';
+        btn.className = 'btn-3d w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-display font-black text-lg rounded-2xl shadow-jelly-btn border-b-4 border-orange-700';
+        btn.onclick = handleRaftClick;
+      }
+    }
+
+    function handleRaftClick() {
+      if (raftPhase === 1) {
+        SFX.click();
+        raftPower += 14;
+        addScore(40);
+        updateRaftUI();
+
+        if (raftPower >= 100) {
+          SFX.splash();
+          SFX.fanfare();
+          addScore(300);
+          raftPhase = 2;
+          raftPower = 20;
+
+          const raftSvg = document.getElementById('svgLiferaft');
+          if (raftSvg) raftSvg.style.transform = 'rotate(0deg)'; // 바로 세움
+
+          const desc = document.getElementById('raftPhaseDesc');
+          const btn = document.getElementById('btnRaftAction');
+          if (desc) desc.innerText = '뗏목 승선 완료! 호루라기를 힘차게 불어 헬기에 신호를 보내세요!';
+          if (btn) {
+            btn.innerText = '📢 호루라기 불기!! (삐-익!)';
+            btn.className = 'btn-3d w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-display font-black text-lg rounded-2xl shadow-jelly-btn border-b-4 border-blue-700';
+          }
+          updateRaftUI();
+        }
+      } else if (raftPhase === 2) {
+        SFX.whistle();
+        raftPower += 20;
+        addScore(80);
+        updateRaftUI();
+
+        if (raftPower >= 100) {
+          SFX.fanfare();
+          addScore(500);
+          confetti({ particleCount: 100, spread: 80 });
+          setTimeout(() => {
+            gotoScreen('screenCert');
+            initCertStage();
+          }, 800);
+        }
+      }
+    }
+
+    function updateRaftUI() {
+      const bar = document.getElementById('raftPowerBar');
+      const txt = document.getElementById('raftStatusText');
+      if (bar) bar.style.width = `${Math.min(100, raftPower)}%`;
+      if (txt) {
+        if (raftPhase === 1) txt.innerText = `발차기 파워: ${Math.min(100, raftPower)}%`;
+        else txt.innerText = `구조 신호 데시벨: ${Math.min(100, raftPower)}%`;
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       11. STAGE 9: 비행기 해양 불시착(Ditching) 60FPS 시네마틱 엔진
+       -------------------------------------------------------------------------- */
+    let planeStep = 0;
+    let ditchPaused = false;
+    let ditchCanvas = null, ditchCtx = null, ditchAnimId = null;
+    let ditchTime = 0, ditchPhase = 'cruise';
+    let ditchAlt = 12000, ditchSpd = 450;
+    let ditchShake = 0;
+    let ditchClouds = [];
+    let ditchSparks = [];
+    let ditchSplashes = [];
+
+    function initPlaneStage() {
+      planeStep = 0;
+      ditchPaused = false;
+      ditchTime = 0;
+      ditchPhase = 'cruise';
+      ditchAlt = 12000;
+      ditchSpd = 450;
+      ditchShake = 0;
+      ditchClouds = [];
+      ditchSparks = [];
+      ditchSplashes = [];
+
+      const cBox = document.getElementById('planeCinemaBox');
+      if (cBox) cBox.classList.remove('hidden');
+      renderPlaneStep(0); // 0은 모든 인터랙티브 패널을 숨기고 시네마틱을 보여줍니다.
+
+      ditchCanvas = document.getElementById('canvasPlaneDitch');
+      if (ditchCanvas) {
+        ditchCtx = ditchCanvas.getContext('2d');
+        ditchCanvas.width = ditchCanvas.parentElement.clientWidth || 550;
+        ditchCanvas.height = ditchCanvas.parentElement.clientHeight || 250;
+      }
+
+      if (ditchCanvas) {
+        for (let i = 0; i < 6; i++) {
+          ditchClouds.push({
+            x: Math.random() * ditchCanvas.width,
+            y: Math.random() * (ditchCanvas.height * 0.6),
+            w: 60 + Math.random() * 80,
+            spd: 2 + Math.random() * 3
+          });
+        }
+      }
+
+      cancelAnimationFrame(ditchAnimId);
+      ditchLoop();
+    }
+
+    function ditchLoop() {
+      if (!ditchPaused) {
+        ditchTime++;
+      }
+      
+      const sub = document.getElementById('planeSubtitleText');
+
+      // 시네마틱 진행 및 일시정지 (퀴즈/액션 호출)
+      if (ditchTime === 60 && !ditchPaused) {
+        ditchPhase = 'alert';
+        ditchPaused = true; // 시네마틱 시간 멈춤
+        SFX.wrong();
+        if (sub) sub.innerText = '⚠️ 기내 압력 저하! 산소마스크가 내려왔습니다!';
+        renderPlaneStep(1); // O2 Quiz
+      } else if (ditchTime === 140 && !ditchPaused) {
+        ditchPhase = 'descent';
+        ditchPaused = true;
+        SFX.wrong();
+        if (sub) sub.innerText = '🚨 기장: "비상 착수! 충격 방지 자세(Brace)를 취하십시오!"';
+        renderPlaneStep(3); // Brace Quiz
+      } else if (ditchTime === 240 && !ditchPaused) {
+        ditchPhase = 'impact';
+        ditchPaused = true;
+        ditchShake = 22;
+        SFX.splash();
+        for (let k = 0; k < 45; k++) {
+          ditchSplashes.push({
+            x: ditchCanvas ? ditchCanvas.width * 0.48 : 250,
+            y: ditchCanvas ? ditchCanvas.height * 0.75 : 180,
+            vx: (Math.random() - 0.5) * 14,
+            vy: -Math.random() * 12 - 4,
+            r: 4 + Math.random() * 8,
+            alpha: 1
+          });
+        }
+        if (sub) sub.innerText = '💥 바다 착수 완료! 침착하게 탈출을 준비하세요!';
+        renderPlaneStep(5); // Vest Wear (기내 착용)
+      } else if (ditchTime >= 310 && !ditchPaused) {
+        finishDitchCinema();
+        return;
+      }
+
+      // 물리 엔진 및 애니메이션 업데이트 (ditchPaused 상태여도 파티클은 계속 그려짐)
+      if (ditchPhase === 'alert' || ditchPhase === 'descent') {
+        if (!ditchPaused) {
+          ditchAlt = Math.max(50, Math.round(ditchAlt - 65));
+          ditchSpd = Math.max(160, Math.round(ditchSpd - 1.4));
+        }
+        ditchShake = Math.sin(ditchTime * 0.9) * (ditchPhase === 'descent' ? 5 : 2.5);
+
+        if (Math.random() < 0.7) {
+          ditchSparks.push({
+            x: 0,
+            y: 0,
+            vx: -3 - Math.random() * 4,
+            vy: (Math.random() - 0.5) * 2,
+            life: 25,
+            isSmoke: Math.random() < 0.5
+          });
+        }
+      } else if (ditchPhase === 'impact') {
+        ditchAlt = 0; ditchSpd = 0;
+        ditchShake *= 0.91;
+      }
+
+      const aEl = document.getElementById('hudAlt');
+      const sEl = document.getElementById('hudSpd');
+      if (aEl) aEl.innerText = ditchAlt.toLocaleString();
+      if (sEl) sEl.innerText = ditchSpd;
+
+      renderDitchCinema();
+
+      if (ditchPhase !== 'done' && G.currentScreen === 'screenPlane') {
+        ditchAnimId = requestAnimationFrame(ditchLoop);
+      }
+    }
+
+    function renderDitchCinema() {
+      if (!ditchCtx || !ditchCanvas) return;
+      const w = ditchCanvas.width;
+      const h = ditchCanvas.height;
+
+      ditchCtx.save();
+      // 화면 흔들림(Screen Shake)
+      if (ditchShake > 0.4) {
+        ditchCtx.translate((Math.random() - 0.5) * ditchShake, (Math.random() - 0.5) * ditchShake);
+      }
+
+      // 1. 역동적인 하늘 배경 그라데이션
+      const skyGrad = ditchCtx.createLinearGradient(0, 0, 0, h);
+      if (ditchPhase === 'alert' || ditchPhase === 'descent') {
+        skyGrad.addColorStop(0, '#0f172a');
+        skyGrad.addColorStop(0.5, '#1e3a8a');
+        skyGrad.addColorStop(1, '#0284c7');
+      } else {
+        skyGrad.addColorStop(0, '#0284c7');
+        skyGrad.addColorStop(0.6, '#38bdf8');
+        skyGrad.addColorStop(1, '#bae6fd');
+      }
+      ditchCtx.fillStyle = skyGrad;
+      ditchCtx.fillRect(0, 0, w, h);
+
+      // 2. 흘러가는 구름 렌더링
+      ditchCtx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ditchClouds.forEach(c => {
+        c.x -= (c.spd + (ditchSpd / 100));
+        if (c.x < -120) c.x = w + 50;
+        ditchCtx.beginPath();
+        ditchCtx.ellipse(c.x, c.y, c.w * 0.5, 12, 0, 0, Math.PI * 2);
+        ditchCtx.fill();
+      });
+
+      // 3. 점점 다가오는 바다 수면 (출렁이는 파도)
+      let seaLevelY = h;
+      if (ditchAlt < 8000) {
+        const seaProgress = (8000 - ditchAlt) / 8000;
+        seaLevelY = h * (1 - seaProgress * 0.32);
+        
+        // 딥 오션 베이스
+        ditchCtx.fillStyle = '#075985';
+        ditchCtx.fillRect(0, seaLevelY, w, h - seaLevelY);
+
+        // 출렁이는 파도 물결선
+        ditchCtx.fillStyle = '#0284c7';
+        ditchCtx.beginPath();
+        ditchCtx.moveTo(0, seaLevelY);
+        for (let x = 0; x <= w; x += 30) {
+          const waveY = seaLevelY + Math.sin((x * 0.05) + (ditchTime * 0.1)) * 4;
+          ditchCtx.lineTo(x, waveY);
+        }
+        ditchCtx.lineTo(w, h);
+        ditchCtx.lineTo(0, h);
+        ditchCtx.closePath();
+        ditchCtx.fill();
+
+        // 파도 흰 거품 포말
+        ditchCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ditchCtx.lineWidth = 2;
+        ditchCtx.beginPath();
+        for (let x = 0; x <= w; x += 25) {
+          const waveY = seaLevelY + Math.sin((x * 0.05) + (ditchTime * 0.1)) * 4;
+          ditchCtx.lineTo(x, waveY);
+        }
+        ditchCtx.stroke();
+      }
+
+      // 4. 비행기 여객기(Jet Airliner) 정밀 그래픽 렌더링
+      const planeX = w * 0.46;
+      const planeProgress = (12000 - ditchAlt) / 12000;
+      let planeY = h * 0.35 + planeProgress * (h * 0.4);
+      let planePitch = 0.03; // 수평 비행 각도
+
+      if (ditchPhase === 'alert' || ditchPhase === 'descent') {
+        planePitch = 0.12; // 기수 하강 각도
+      } else if (ditchPhase === 'impact') {
+        planePitch = -0.04; // 착수 시 기수 약간 들림
+        planeY = seaLevelY - 4;
+      }
+
+      ditchCtx.save();
+      ditchCtx.translate(planeX, planeY);
+      ditchCtx.rotate(planePitch);
+
+      // --- [상세 여객기 기체 렌더링 시작] ---
+      // A. 오른쪽 날개 (원근상 뒤쪽)
+      ditchCtx.fillStyle = '#cbd5e1';
+      ditchCtx.beginPath();
+      ditchCtx.moveTo(10, -5);
+      ditchCtx.lineTo(35, -35);
+      ditchCtx.lineTo(15, -35);
+      ditchCtx.lineTo(-10, -5);
+      ditchCtx.closePath();
+      ditchCtx.fill();
+
+      // B. 수평 꼬리날개 (원근 뒤)
+      ditchCtx.fillStyle = '#94a3b8';
+      ditchCtx.beginPath();
+      ditchCtx.moveTo(-65, -3);
+      ditchCtx.lineTo(-85, -16);
+      ditchCtx.lineTo(-75, -16);
+      ditchCtx.lineTo(-55, -3);
+      ditchCtx.closePath();
+      ditchCtx.fill();
+
+      // C. 수직 꼬리날개 (항공사 로고 라인 포함)
+      ditchCtx.fillStyle = '#0284c7'; // 청색 테일 핀
+      ditchCtx.beginPath();
+      ditchCtx.moveTo(-50, -6);
+      ditchCtx.lineTo(-85, -38);
+      ditchCtx.lineTo(-65, -38);
+      ditchCtx.lineTo(-38, -6);
+      ditchCtx.closePath();
+      ditchCtx.fill();
+      // 꼬리날개 로고 포인트
+      ditchCtx.fillStyle = '#facc15';
+      ditchCtx.beginPath();
+      ditchCtx.arc(-70, -28, 4, 0, Math.PI * 2);
+      ditchCtx.fill();
+
+      // D. 유선형 여객기 동체 (Fuselage)
+      ditchCtx.fillStyle = '#ffffff';
+      ditchCtx.strokeStyle = '#94a3b8';
+      ditchCtx.lineWidth = 1.5;
+      ditchCtx.beginPath();
+      // 노즈콘(앞코) -> 지붕 -> 꼬리 -> 하부
+      ditchCtx.moveTo(70, 0); // 기수 첨단
+      ditchCtx.bezierCurveTo(65, -14, -40, -14, -75, -4); // 상단 라인
+      ditchCtx.lineTo(-80, -2);
+      ditchCtx.bezierCurveTo(-40, 15, 60, 15, 70, 0); // 하단 라인
+      ditchCtx.closePath();
+      ditchCtx.fill();
+      ditchCtx.stroke();
+
+      // 동체 스트라이프 장식 라인
+      ditchCtx.strokeStyle = '#0284c7';
+      ditchCtx.lineWidth = 2.5;
+      ditchCtx.beginPath();
+      ditchCtx.moveTo(50, 4);
+      ditchCtx.lineTo(-70, 4);
+      ditchCtx.stroke();
+
+      // E. 조종석 콕핏 창문 (Cockpit Glass)
+      ditchCtx.fillStyle = '#0f172a';
+      ditchCtx.beginPath();
+      ditchCtx.moveTo(64, -2);
+      ditchCtx.lineTo(54, -8);
+      ditchCtx.lineTo(46, -7);
+      ditchCtx.lineTo(52, -1);
+      ditchCtx.closePath();
+      ditchCtx.fill();
+
+      // F. 승객 좌석 창문 행열 (Windows)
+      ditchCtx.fillStyle = '#38bdf8';
+      for (let wx = 35; wx >= -45; wx -= 10) {
+        ditchCtx.beginPath();
+        ditchCtx.ellipse(wx, -2, 2.5, 3.5, 0, 0, Math.PI * 2);
+        ditchCtx.fill();
+      }
+
+      // 비상구 도어 표시 (Exit Doors)
+      ditchCtx.strokeStyle = '#dc2626';
+      ditchCtx.lineWidth = 1.5;
+      ditchCtx.strokeRect(40, -6, 5, 12);
+      ditchCtx.strokeRect(-25, -6, 5, 12);
+
+      // G. 왼쪽 주익 날개 (앞쪽 메인 윙)
+      ditchCtx.fillStyle = '#e2e8f0';
+      ditchCtx.strokeStyle = '#cbd5e1';
+      ditchCtx.lineWidth = 1.5;
+      ditchCtx.beginPath();
+      ditchCtx.moveTo(12, 2);
+      ditchCtx.lineTo(-12, 36);
+      ditchCtx.lineTo(-32, 36);
+      ditchCtx.lineTo(-15, 4);
+      ditchCtx.closePath();
+      ditchCtx.fill();
+      ditchCtx.stroke();
+
+      // H. 제트 엔진 (Turbofan Nacelle)
+      ditchCtx.fillStyle = '#64748b';
+      ditchCtx.beginPath();
+      ditchCtx.ellipse(-4, 18, 11, 6, 0.05, 0, Math.PI * 2);
+      ditchCtx.fill();
+      ditchCtx.fillStyle = '#1e293b'; // 흡기구
+      ditchCtx.beginPath();
+      ditchCtx.ellipse(6, 18, 3, 5.5, 0, 0, Math.PI * 2);
+      ditchCtx.fill();
+
+      // I. 엔진 화염 및 연기 배출 (비상 상황 시)
+      if (ditchPhase === 'alert' || ditchPhase === 'descent') {
+        // 엔진 후방 화염
+        ditchCtx.fillStyle = '#f97316';
+        ditchCtx.beginPath();
+        ditchCtx.moveTo(-15, 16);
+        ditchCtx.lineTo(-28 - Math.random() * 12, 18 + (Math.random() - 0.5) * 4);
+        ditchCtx.lineTo(-15, 20);
+        ditchCtx.closePath();
+        ditchCtx.fill();
+
+        ditchCtx.fillStyle = '#facc15';
+        ditchCtx.beginPath();
+        ditchCtx.moveTo(-15, 17);
+        ditchCtx.lineTo(-22 - Math.random() * 6, 18);
+        ditchCtx.lineTo(-15, 19);
+        ditchCtx.closePath();
+        ditchCtx.fill();
+
+        // 파티클 렌더링 (연기 & 불꽃)
+        ditchSparks.forEach(sp => {
+          sp.x += sp.vx;
+          sp.y += sp.vy;
+          sp.life--;
+          if (sp.isSmoke) {
+            ditchCtx.fillStyle = `rgba(50, 50, 60, ${sp.life / 25 * 0.7})`;
+            ditchCtx.beginPath();
+            ditchCtx.arc(-20 + sp.x, 18 + sp.y, (25 - sp.life) * 0.6, 0, Math.PI * 2);
+            ditchCtx.fill();
+          } else {
+            ditchCtx.fillStyle = '#f87171';
+            ditchCtx.beginPath();
+            ditchCtx.arc(-18 + sp.x, 18 + sp.y, 2, 0, Math.PI * 2);
+            ditchCtx.fill();
+          }
+        });
+        ditchSparks = ditchSparks.filter(sp => sp.life > 0);
+      }
+
+      ditchCtx.restore(); // 비행기 렌더링 복귀
+
+      // 5. 착수 순간의 거대한 물보라(Water Splash) 연출
+      if (ditchPhase === 'impact') {
+        ditchSplashes.forEach(sp => {
+          sp.x += sp.vx;
+          sp.y += sp.vy;
+          sp.vy += 0.35; // 중력
+          sp.alpha -= 0.015;
+
+          if (sp.alpha > 0) {
+            ditchCtx.fillStyle = `rgba(186, 230, 253, ${Math.max(0, sp.alpha)})`;
+            ditchCtx.beginPath();
+            ditchCtx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+            ditchCtx.fill();
+          }
+        });
+
+        // 비행기 주변 거품 풀
+        ditchCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        ditchCtx.beginPath();
+        ditchCtx.ellipse(planeX, seaLevelY + 2, 70, 14, 0, 0, Math.PI * 2);
+        ditchCtx.fill();
+      }
+
+      // 6. 비상 경보 레드 섬광 플래시 오버레이
+      if ((ditchPhase === 'alert' || ditchPhase === 'descent') && ditchTime % 30 < 15) {
+        ditchCtx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+        ditchCtx.fillRect(0, 0, w, h);
+      }
+
+      ditchCtx.restore();
+    }
+
+    function finishDitchCinema() {
+      ditchPhase = 'done';
+      cancelAnimationFrame(ditchAnimId);
+      const cBox = document.getElementById('planeCinemaBox');
+      if (cBox) cBox.classList.add('hidden');
+      renderPlaneStep(7); // 구조 완료 씬
+    }
+
+    // 단계별 인터랙티브 렌더링 및 이벤트 매핑
+    function renderPlaneStep(step) {
+      planeStep = step;
+      const iBox = document.getElementById('planeInteractiveBox');
+      
+      // 모든 하위 패널 숨기기
+      const panels = [
+        'subPlaneO2Quiz', 'subPlaneO2Wear', 
+        'subPlaneBraceQuiz', 'subPlaneBrace', 
+        'subPlaneVestWear', 'subPlaneVest', 'subPlaneSea'
+      ];
+      panels.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      if (step === 0) {
+        if (iBox) iBox.classList.add('hidden'); // 시네마틱 재생을 위해 가림
+        return;
+      }
+
+      // 인터랙티브 박스 활성화
+      if (iBox) iBox.classList.remove('hidden');
+
+      if (step === 1) {
+        document.getElementById('subPlaneO2Quiz')?.classList.remove('hidden');
+        document.getElementById('btnO2Wrong').onclick = () => { 
+          SFX.wrong(); 
+          showToast("❌ 오답! 내가 의식을 잃으면 다른 사람을 도울 수 없어요!"); 
+        };
+        document.getElementById('btnO2Right').onclick = () => { 
+          SFX.clickLock(); 
+          addScore(150); 
+          renderPlaneStep(2); 
+        };
+      } 
+      else if (step === 2) {
+        document.getElementById('subPlaneO2Wear')?.classList.remove('hidden');
+        document.getElementById('btnWearO2').onclick = () => {
+          SFX.clickLock(); 
+          addScore(150);
+          // 착용 완료 후 시네마틱 재개
+          if (iBox) iBox.classList.add('hidden');
+          ditchPaused = false;
+        };
+      } 
+      else if (step === 3) {
+        document.getElementById('subPlaneBraceQuiz')?.classList.remove('hidden');
+        document.getElementById('btnBraceWrong').onclick = () => { 
+          SFX.wrong(); 
+          showToast("❌ 오답! 충격을 온몸으로 받게 됩니다!"); 
+        };
+        document.getElementById('btnBraceRight').onclick = () => { 
+          SFX.clickLock(); 
+          addScore(150); 
+          renderPlaneStep(4); 
+        };
+      } 
+      else if (step === 4) {
+        document.getElementById('subPlaneBrace')?.classList.remove('hidden');
+        const btnHold = document.getElementById('btnBraceHold');
+        btnHold.innerText = '🙇‍♂️ 충격 방지 자세 유지! (터치하기!)';
+        btnHold.onclick = () => {
+          SFX.clickLock(); 
+          addScore(250);
+          btnHold.innerText = '✅ 충격 방지 자세 완벽 성공!';
+          setTimeout(() => { 
+            if (iBox) iBox.classList.add('hidden'); 
+            ditchPaused = false; 
+          }, 700);
+        };
+      } 
+      else if (step === 5) {
+        document.getElementById('subPlaneVestWear')?.classList.remove('hidden');
+        const vBtn1 = document.getElementById('btnVestWear1');
+        const vBtn2 = document.getElementById('btnVestWear2');
+        
+        // 버튼 초기화
+        vBtn1.className = 'btn-3d w-full py-3 bg-slate-700 text-white font-bold rounded-xl border-2 border-slate-500 text-left px-5 text-sm transition-colors';
+        vBtn1.innerText = '1️⃣ 조끼를 머리 위로 뒤집어 쓰기';
+        vBtn2.className = 'btn-3d w-full py-3 bg-slate-700 text-slate-400 font-bold rounded-xl border-2 border-slate-500 text-left px-5 text-sm pointer-events-none opacity-50 transition-colors';
+        vBtn2.innerText = '2️⃣ 허리끈을 당겨 몸에 맞게 버클 채우기';
+
+        vBtn1.onclick = () => {
+          SFX.clickLock(); 
+          addScore(100);
+          vBtn1.innerText = '✅ 조끼 뒤집어 쓰기 완료';
+          vBtn1.classList.replace('bg-slate-700', 'bg-emerald-600');
+          vBtn1.classList.add('pointer-events-none');
+          vBtn2.classList.remove('pointer-events-none', 'opacity-50', 'text-slate-400');
+          vBtn2.classList.add('text-white');
+        };
+        
+        vBtn2.onclick = () => {
+          SFX.clickLock(); 
+          addScore(100);
+          vBtn2.innerText = '✅ 허리 버클 채우기 완료';
+          vBtn2.classList.replace('bg-slate-700', 'bg-emerald-600');
+          setTimeout(() => { 
+            renderPlaneStep(6); 
+          }, 600);
+        };
+      } 
+      else if (step === 6) {
+        document.getElementById('subPlaneVest')?.classList.remove('hidden');
+        const pBtn = document.getElementById('btnPullInflator');
+        pBtn.disabled = false;
+        pBtn.innerText = '🔻 빨간 손잡이 당기기 (PULL TO INFLATE)';
+        
+        // 구명조끼 SVG 원상복구
+        const cL = document.getElementById('aeroChamberL');
+        const cR = document.getElementById('aeroChamberR');
+        if (cL && cR) {
+          cL.setAttribute('d', 'M 68 25 C 50 40, 52 85, 72 105 C 84 105, 88 95, 82 55 Z');
+          cR.setAttribute('d', 'M 172 25 C 190 40, 188 85, 168 105 C 156 105, 152 95, 158 55 Z');
+          cL.setAttribute('fill', '#ca8a04');
+          cR.setAttribute('fill', '#ca8a04');
+        }
+        
+        const st = document.getElementById('txtVestInflateStatus');
+        if (st) {
+          st.innerText = '상태: 미팽창 (탈출문 통과 후 레버를 당겨 가스를 주입하세요)';
+          st.className = 'text-[10px] font-black text-yellow-300';
+        }
+
+        pBtn.onclick = () => {
+          SFX.airHiss();
+          SFX.fanfare();
+          addScore(350);
+          
+          if (cL && cR) {
+            cL.setAttribute('d', 'M 65 18 C 30 35, 32 95, 74 112 C 92 112, 96 95, 88 50 Z');
+            cR.setAttribute('d', 'M 175 18 C 210 35, 208 95, 166 112 C 148 112, 144 95, 152 50 Z');
+            cL.setAttribute('fill', '#facc15');
+            cR.setAttribute('fill', '#facc15');
+          }
+          if (st) {
+            st.innerText = '✅ 팽창 완료! (듀얼 CO2 에어 챔버 100% 팽창)';
+            st.className = 'text-xs font-black text-emerald-400';
+          }
+          pBtn.disabled = true;
+          pBtn.innerText = '구명조끼 완전 팽창 성공!';
+          
+          setTimeout(() => { 
+            if (iBox) iBox.classList.add('hidden'); 
+            ditchPaused = false; 
+          }, 1100);
+        };
+      } 
+      else if (step === 7) {
+        document.getElementById('subPlaneSea')?.classList.remove('hidden');
+        document.getElementById('btnPlaneDone').onclick = () => {
+          SFX.fanfare(); 
+          addScore(400); 
+          confetti({ particleCount: 100, spread: 80 });
+          gotoScreen('screenCert'); 
+          initCertStage();
+        };
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       12. STAGE 10: 수료 인증서 렌더링
+       -------------------------------------------------------------------------- */
+    function initCertStage() {
+      const cTxt = document.getElementById('certClassTxt');
+      const nTxt = document.getElementById('certNameTxt');
+      const sTxt = document.getElementById('certScoreTxt');
+      const gBadge = document.getElementById('certGradeBadge');
+
+      if (cTxt) cTxt.innerText = G.studentClass;
+      if (nTxt) nTxt.innerText = G.studentName;
+      if (sTxt) sTxt.innerText = `${G.score.toLocaleString()} pt`;
+
+      let grade = 'S 등급 (완벽한 생존수영 마스터)';
+      let col = 'text-emerald-600';
+      if (G.score < 2000) {
+        grade = 'A 등급 (우수한 생존수영 대원)';
+        col = 'text-cyan-600';
+      }
+      if (gBadge) {
+        gBadge.innerText = grade;
+        gBadge.className = `font-display font-black text-lg ${col}`;
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       13. 윈도우 로드 & 이벤트 리스너 바인딩 (안전 초기화)
+       -------------------------------------------------------------------------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. 사운드 토글
+      const btnAudio = document.getElementById('btnAudioToggle');
+      if (btnAudio) {
+        btnAudio.onclick = () => {
+          G.soundMuted = !G.soundMuted;
+          btnAudio.innerText = G.soundMuted ? '🔇' : '🔊';
+        };
+      }
+
+      // 2. 파트너 선택
+      document.querySelectorAll('.partner-btn').forEach(btn => {
+        btn.onclick = () => {
+          SFX.click();
+          document.querySelectorAll('.partner-btn').forEach(b => {
+            b.classList.remove('border-ocean-400', 'bg-white');
+            b.classList.add('border-transparent', 'bg-white/60');
+          });
+          btn.classList.add('border-ocean-400', 'bg-white');
+          btn.classList.remove('border-transparent', 'bg-white/60');
+          G.partner = btn.dataset.partner;
+        };
+      });
+
+      // 3. 인트로 시작 버튼들
+      const btnStart = document.getElementById('btnStartFullCourse');
+      if (btnStart) {
+        btnStart.onclick = () => {
+          SFX.click();
+          const cInput = document.getElementById('inputClass');
+          const nInput = document.getElementById('inputName');
+          if (cInput && cInput.value.trim()) G.studentClass = cInput.value.trim();
+          if (nInput && nInput.value.trim()) G.studentName = nInput.value.trim();
+          gotoScreen('screenPack');
+          initPackStage();
+        };
+      }
+
+      const btnQSlide = document.getElementById('btnQuickSlide');
+      if (btnQSlide) {
+        btnQSlide.onclick = () => {
+          SFX.click();
+          gotoScreen('screenSlide');
+          initSlideStage();
+        };
+      }
+
+      const btnQPlane = document.getElementById('btnQuickPlane');
+      if (btnQPlane) {
+        btnQPlane.onclick = () => {
+          SFX.click();
+          gotoScreen('screenPlane');
+          initPlaneStage();
+        };
+      }
+
+      // 4. 각 스테이지 네비게이션 버튼
+      const btnPackNext = document.getElementById('btnPackNext');
+      if (btnPackNext) {
+        btnPackNext.onclick = () => {
+          SFX.click();
+          gotoScreen('screenBus');
+          initBusStage();
+        };
+      }
+
+      const btnBusNext = document.getElementById('btnBusNext');
+      if (btnBusNext) {
+        btnBusNext.onclick = () => {
+          SFX.click();
+          gotoScreen('screenHammer');
+          initHammerStage();
+        };
+      }
+
+      const btnArrivePool = document.getElementById('btnArrivePool');
+      if (btnArrivePool) {
+        btnArrivePool.onclick = () => {
+          SFX.click();
+          gotoScreen('screenHammer');
+          initHammerStage();
+        };
+      }
+
+      const btnHammerNext = document.getElementById('btnHammerNext');
+      if (btnHammerNext) {
+        btnHammerNext.onclick = () => {
+          SFX.click();
+          gotoScreen('screenWashVest');
+          initWashVestStage();
+        };
+      }
+
+      const btnWashVestNext = document.getElementById('btnWashVestNext');
+      if (btnWashVestNext) {
+        btnWashVestNext.onclick = () => {
+          SFX.click();
+          gotoScreen('screenPose');
+          initPoseStage();
+        };
+      }
+
+      const btnPoseNext = document.getElementById('btnPoseNext');
+      if (btnPoseNext) {
+        btnPoseNext.onclick = () => {
+          SFX.click();
+          gotoScreen('screenSlide');
+          initSlideStage();
+        };
+      }
+
+      // 5. 워터슬라이드 컨트롤러 바인딩 (터치 & 키보드)
+      const bSLeft = document.getElementById('btnSlideLeft');
+      const bSRight = document.getElementById('btnSlideRight');
+      const bSPaddle = document.getElementById('btnSlidePaddle');
+      const bSSafe = document.getElementById('btnSlideSafePose');
+
+      if (bSLeft) {
+        bSLeft.onpointerdown = () => { slideSteer = -1; SFX.click(); };
+        bSLeft.onpointerup = () => { slideSteer = 0; };
+        bSLeft.onpointerleave = () => { slideSteer = 0; };
+      }
+      if (bSRight) {
+        bSRight.onpointerdown = () => { slideSteer = 1; SFX.click(); };
+        bSRight.onpointerup = () => { slideSteer = 0; };
+        bSRight.onpointerleave = () => { slideSteer = 0; };
+      }
+      if (bSPaddle) {
+        bSPaddle.onclick = () => {
+          slideSpeed = Math.min(85, slideSpeed + 5);
+          SFX.splash();
+          addScore(30);
+        };
+      }
+      if (bSSafe) {
+        bSSafe.onpointerdown = () => { slideIsSafePose = true; SFX.clickLock(); };
+        bSSafe.onpointerup = () => { slideIsSafePose = false; };
+        bSSafe.onpointerleave = () => { slideIsSafePose = false; };
+      }
+
+      // 키보드 방향키 호환
+      window.addEventListener('keydown', (e) => {
+        if (G.currentScreen !== 'screenSlide') return;
+        if (e.key === 'ArrowLeft' || e.key === 'a') slideSteer = -1;
+        if (e.key === 'ArrowRight' || e.key === 'd') slideSteer = 1;
+        if (e.key === 'ArrowUp' || e.key === 'w') {
+          slideSpeed = Math.min(85, slideSpeed + 5);
+          SFX.splash();
+        }
+        if (e.key === 'ArrowDown' || e.key === 's') slideIsSafePose = true;
+      });
+      window.addEventListener('keyup', (e) => {
+        if (G.currentScreen !== 'screenSlide') return;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'a' || e.key === 'd') slideSteer = 0;
+        if (e.key === 'ArrowDown' || e.key === 's') slideIsSafePose = false;
+      });
+
+      // 슬라이드 편의 버튼
+      const bExitSlide = document.getElementById('btnExitSlideHome');
+      if (bExitSlide) bExitSlide.onclick = () => gotoScreen('screenIntro');
+      const bSkipSlide = document.getElementById('btnSkipSlide');
+      if (bSkipSlide) bSkipSlide.onclick = () => {
+        gotoScreen('screenRaft');
+        initRaftStage();
+      };
+
+      // 비행기 시네마틱 스킵 / 다시보기
+      const bSkipCinema = document.getElementById('btnSkipCinema');
+      if (bSkipCinema) bSkipCinema.onclick = () => finishDitchCinema();
+      const bReplayCinema = document.getElementById('btnReplayCinema');
+      if (bReplayCinema) bReplayCinema.onclick = () => initPlaneStage();
+
+      const bOpenPlane = document.getElementById('btnOpenPlaneSpecial');
+      if (bOpenPlane) bOpenPlane.onclick = () => {
+        gotoScreen('screenPlane');
+        initPlaneStage();
+      };
+    });
+  </script>
+</body>
+</html>
