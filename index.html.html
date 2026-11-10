@@ -636,8 +636,8 @@
 
       <!-- 상단 레이스 HUD 바 -->
       <div class="w-full max-w-xl bg-slate-900 text-white px-3 py-1.5 rounded-xl border border-slate-700 flex items-center justify-between text-xs mb-1">
-        <div>거리: <span id="hudSlideDist" class="font-display font-black text-amber-400">1,200m</span></div>
-        <div>속도: <span id="hudSlideSpd" class="font-display font-black text-cyan-400">45 km/h</span></div>
+        <div>거리: <span id="hudSlideDist" class="font-display font-black text-amber-400">800m</span></div>
+        <div>속도: <span id="hudSlideSpd" class="font-display font-black text-cyan-400">20 km/h</span></div>
         <div>구명환: <span id="hudSlideRings" class="font-display font-black text-emerald-400">0개</span></div>
       </div>
 
@@ -1751,7 +1751,7 @@
        9. STAGE 6: 워터슬라이드 탈출 레이스 60FPS 캔버스 엔진
        -------------------------------------------------------------------------- */
     let slideCanvas = null, slideCtx = null, slideAnimId = null;
-    let slideDist = 1200, slideSpeed = 45, slideRings = 0;
+    let slideDist = 800, slideSpeed = 20, slideRings = 0;
     let slidePlayerX = 0; // -1 (왼쪽) ~ 1 (오른쪽)
     let slideSteer = 0;
     let slideIsSafePose = false;
@@ -1759,8 +1759,8 @@
     let slideTrackParticles = [];
 
     function initSlideStage() {
-      slideDist = 1200;
-      slideSpeed = 45;
+      slideDist = 800;
+      slideSpeed = 20;
       slideRings = 0;
       slidePlayerX = 0;
       slideSteer = 0;
@@ -1792,8 +1792,8 @@
       slidePlayerX = Math.max(-0.85, Math.min(0.85, slidePlayerX + slideSteer * 0.05));
 
       // 속도 및 거리 감소
-      const baseDecel = slideIsSafePose ? 0.3 : 0.15;
-      slideSpeed = Math.max(15, slideSpeed - baseDecel);
+      const baseDecel = slideIsSafePose ? 0.2 : 0.1;
+      slideSpeed = Math.max(10, slideSpeed - baseDecel);
       slideDist = Math.max(0, slideDist - (slideSpeed / 3.6) * 0.4);
 
       // 경보 주기
@@ -1801,13 +1801,13 @@
       const alertEl = document.getElementById('slideAlertOverlay');
       if (slideAlertTimer % 180 < 60) {
         if (alertEl) alertEl.classList.remove('hidden');
-        if (!slideIsSafePose) slideSpeed = Math.max(12, slideSpeed - 0.8);
+        if (!slideIsSafePose) slideSpeed = Math.max(10, slideSpeed - 0.5);
       } else {
         if (alertEl) alertEl.classList.add('hidden');
       }
 
       // 파티클 생성
-      if (slideCanvas && Math.random() < 0.6) {
+      if (slideCanvas && Math.random() < 0.25) {
         slideTrackParticles.push({
           x: (Math.random() - 0.5) * slideCanvas.width * 0.7,
           y: 0,
@@ -1819,8 +1819,8 @@
       // 파티클 이동 및 수집
       for (let i = slideTrackParticles.length - 1; i >= 0; i--) {
         const p = slideTrackParticles[i];
-        p.scale += 0.04;
-        p.y += p.scale * 12;
+        p.scale += 0.01;
+        p.y += p.scale * 3.5;
 
         // 충돌 판정
         if (p.scale > 0.8 && p.scale < 1.1) {
@@ -2723,7 +2723,7 @@
       }
       if (bSPaddle) {
         bSPaddle.onclick = () => {
-          slideSpeed = Math.min(85, slideSpeed + 5);
+          slideSpeed = Math.min(40, slideSpeed + 2);
           SFX.splash();
           addScore(30);
         };
@@ -2740,7 +2740,7 @@
         if (e.key === 'ArrowLeft' || e.key === 'a') slideSteer = -1;
         if (e.key === 'ArrowRight' || e.key === 'd') slideSteer = 1;
         if (e.key === 'ArrowUp' || e.key === 'w') {
-          slideSpeed = Math.min(85, slideSpeed + 5);
+          slideSpeed = Math.min(40, slideSpeed + 2);
           SFX.splash();
         }
         if (e.key === 'ArrowDown' || e.key === 's') slideIsSafePose = true;
